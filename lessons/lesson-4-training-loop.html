@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lesson 4: The Training Loop</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #f8f9fa;
+    color: #1a1a1a;
+    padding: 40px 24px;
+    max-width: 900px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+  h1 { font-size: 24px; font-weight: 600; margin-bottom: 6px; }
+  .subtitle { color: #666; font-size: 14px; margin-bottom: 40px; }
+  h2 { font-size: 18px; font-weight: 600; margin: 36px 0 16px; }
+  h3 { font-size: 15px; font-weight: 600; margin: 24px 0 10px; color: #333; }
+  p { margin-bottom: 14px; font-size: 15px; }
+  ul { margin: 8px 0 14px 20px; font-size: 14px; }
+  ol { margin: 8px 0 14px 20px; font-size: 14px; }
+  li { margin-bottom: 6px; }
+
+  .section {
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 10px;
+    padding: 24px;
+    margin-bottom: 24px;
+  }
+  .section-num {
+    display: inline-block;
+    background: #1a1a1a;
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 10px;
+    margin-bottom: 12px;
+  }
+  code {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    background: #f0f0f0;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 13px;
+  }
+  .code-block {
+    background: #1a1a1a;
+    color: #e0e0e0;
+    padding: 16px 18px;
+    border-radius: 8px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 13px;
+    line-height: 1.5;
+    overflow-x: auto;
+    margin: 12px 0 16px;
+    white-space: pre;
+  }
+  .code-block .c { color: #6a9955; }
+  .code-block .k { color: #c586c0; }
+  .code-block .n { color: #b5cea8; }
+  .code-block .s { color: #ce9178; }
+
+  .insight {
+    background: #f0f4ff;
+    border-left: 3px solid #3f51b5;
+    padding: 14px 16px;
+    margin: 16px 0;
+    border-radius: 0 8px 8px 0;
+    font-size: 14px;
+  }
+  .insight-title {
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: #3f51b5;
+    font-size: 13px;
+  }
+
+  .callout {
+    background: #fff8e1;
+    border-left: 3px solid #f9a825;
+    padding: 14px 16px;
+    margin: 16px 0;
+    border-radius: 0 8px 8px 0;
+    font-size: 14px;
+  }
+  .callout-title {
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: #f57f17;
+    font-size: 13px;
+  }
+
+  /* Loop diagram */
+  .loop-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    margin: 24px 0;
+    flex-wrap: wrap;
+  }
+  .loop-step {
+    background: #f5f5f5;
+    border: 2px solid #e0e0e0;
+    border-radius: 10px;
+    padding: 12px 16px;
+    text-align: center;
+    font-size: 13px;
+    min-width: 120px;
+  }
+  .loop-step strong { display: block; font-size: 12px; margin-bottom: 4px; }
+  .loop-arrow {
+    font-size: 20px;
+    color: #999;
+    padding: 0 6px;
+  }
+  .loop-step.active {
+    border-color: #3f51b5;
+    background: #e8eaf6;
+  }
+
+  /* Schedule chart */
+  .schedule-chart {
+    display: flex;
+    align-items: flex-end;
+    height: 80px;
+    gap: 1px;
+    margin: 16px 0;
+    padding: 0 0 24px;
+    position: relative;
+    border-bottom: 2px solid #e0e0e0;
+    border-left: 2px solid #e0e0e0;
+  }
+  .schedule-bar {
+    flex: 1;
+    background: #3f51b5;
+    border-radius: 2px 2px 0 0;
+    min-width: 2px;
+  }
+  .schedule-label {
+    position: absolute;
+    bottom: -22px;
+    font-size: 11px;
+    color: #666;
+  }
+  .schedule-label.left { left: 0; }
+  .schedule-label.mid { left: 50%; transform: translateX(-50%); }
+  .schedule-label.right { right: 0; }
+
+  /* Optimizer comparison */
+  .opt-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 16px 0;
+  }
+  .opt-card {
+    background: #f5f5f5;
+    border-radius: 10px;
+    padding: 16px;
+    border: 2px solid #e0e0e0;
+  }
+  .opt-card h4 {
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .opt-card.adamw { border-color: #66bb6a; }
+  .opt-card.adamw h4 { color: #2e7d32; }
+  .opt-card.muon { border-color: #7e57c2; }
+  .opt-card.muon h4 { color: #4527a0; }
+  .opt-card p { font-size: 13px; margin-bottom: 8px; }
+  .opt-card ul { font-size: 13px; }
+
+  /* Timeline */
+  .timeline {
+    position: relative;
+    margin: 20px 0 20px 20px;
+    padding-left: 24px;
+    border-left: 3px solid #e0e0e0;
+  }
+  .timeline-event {
+    position: relative;
+    margin-bottom: 20px;
+  }
+  .timeline-event::before {
+    content: '';
+    position: absolute;
+    left: -32px;
+    top: 4px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #3f51b5;
+    border: 2px solid white;
+  }
+  .timeline-event .time {
+    font-size: 12px;
+    font-weight: 600;
+    color: #3f51b5;
+    margin-bottom: 2px;
+  }
+  .timeline-event .desc {
+    font-size: 14px;
+  }
+
+  @media (max-width: 600px) {
+    .opt-grid { grid-template-columns: 1fr; }
+    .loop-container { gap: 4px; }
+  }
+</style>
+</head>
+<body>
+
+<h1>Lesson 4: The Training Loop</h1>
+<p class="subtitle">Where the model actually learns</p>
+
+<!-- ============================================ -->
+<div class="section">
+  <span class="section-num">THE BIG PICTURE</span>
+  <h2>What Happens When You Run train.py</h2>
+
+  <p>You now know the two big pieces: how data gets prepared (Lesson 2) and how the model processes it (Lesson 3). This lesson connects them. The training loop is the engine that takes a model full of random numbers and, step by step, turns it into something that can predict text.</p>
+
+  <p>The entire loop fits on one screen of code. Here's the skeleton:</p>
+
+  <div class="code-block"><span class="k">while</span> True:
+    <span class="c"># 1. FORWARD: feed data through the model, get loss</span>
+    loss = model(x, y)
+
+    <span class="c"># 2. BACKWARD: compute gradients (which direction to nudge each parameter)</span>
+    loss.backward()
+
+    <span class="c"># 3. UPDATE: nudge all 50M parameters to reduce loss</span>
+    optimizer.step()
+
+    <span class="c"># 4. RESET: clear gradients for the next step</span>
+    model.zero_grad()
+
+    <span class="c"># 5. CHECK: are we out of time?</span>
+    <span class="k">if</span> total_training_time >= TIME_BUDGET:
+        <span class="k">break</span></div>
+
+  <p>That's it. Every AI model you've ever used was trained by some version of this loop. The details differ, but the structure is always: predict, measure how wrong you were, figure out which direction to adjust, adjust, repeat.</p>
+
+  <div class="loop-container">
+    <div class="loop-step active">
+      <strong>FORWARD</strong>
+      Predict next token
+    </div>
+    <div class="loop-arrow">&rarr;</div>
+    <div class="loop-step">
+      <strong>LOSS</strong>
+      How wrong?
+    </div>
+    <div class="loop-arrow">&rarr;</div>
+    <div class="loop-step">
+      <strong>BACKWARD</strong>
+      Blame assignment
+    </div>
+    <div class="loop-arrow">&rarr;</div>
+    <div class="loop-step">
+      <strong>UPDATE</strong>
+      Nudge weights
+    </div>
+    <div class="loop-arrow">&rarr;</div>
+    <div class="loop-step" style="border-style: dashed;">
+      <strong>REPEAT</strong>
+      Until time's up
+    </div>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<div class="section">
+  <span class="section-num">PART 1</span>
+  <h2>Forward Pass + Loss: "How Wrong Are We?"</h2>
+
+  <p>The forward pass is everything from Lessons 2 and 3 happening in sequence: tokens go in, a prediction for each next token comes out, and cross-entropy loss measures the gap between the prediction and reality.</p>
+
+  <div class="code-block"><span class="c"># train.py line 548</span>
+<span class="k">with</span> autocast_ctx:          <span class="c"># use bfloat16 for speed</span>
+    loss = model(x, y)       <span class="c"># x = input tokens, y = target tokens</span>
+train_loss = loss.detach()   <span class="c"># save the number for logging (don't track gradients on it)</span></div>
+
+  <p>What happens inside <code>model(x, y)</code>:</p>
+  <ol>
+    <li>Tokens &rarr; embeddings &rarr; 8 transformer blocks &rarr; logits (one score per vocab word, per position)</li>
+    <li>Cross-entropy compares those logits against the actual next tokens</li>
+    <li>Returns a single number: the loss</li>
+  </ol>
+
+  <p>The loss starts high (around 10+, basically random guessing across 32,768 vocabulary tokens) and should drop below 2 by the end of training. Lower loss means the model's predictions are closer to reality.</p>
+
+  <div class="callout">
+    <div class="callout-title">autocast and bfloat16</div>
+    <code>autocast_ctx</code> tells PyTorch to use bfloat16 (16-bit) precision instead of float32 (32-bit) for most operations. Half the bits means roughly half the memory and double the speed on modern GPUs. The "bf" stands for "brain floating point," a format designed by Google specifically for ML: it keeps the same range as float32 but with less precision. Good enough for training, and the final loss calculation is done in full float32 for accuracy.
+  </div>
+</div>
+
+<!-- ============================================ -->
+<div class="section">
+  <span class="section-num">PART 2</span>
+  <h2>Gradient Accumulation: Fitting a Big Batch in a Small GPU</h2>
+
+  <p>The model wants to process <strong>524,288 tokens</strong> per training step (<code>TOTAL_BATCH_SIZE = 2**19</code>). But the GPU can only fit 128 sequences of 2,048 tokens at once, which is 262,144 tokens. That's half of what we need.</p>
+
+  <div class="code-block"><span class="c"># train.py lines 495-497</span>
+tokens_per_fwdbwd = DEVICE_BATCH_SIZE * MAX_SEQ_LEN   <span class="c"># 128 * 2048 = 262,144</span>
+grad_accum_steps = TOTAL_BATCH_SIZE // tokens_per_fwdbwd  <span class="c"># 524,288 / 262,144 = 2</span></div>
+
+  <p>The solution: <strong>gradient accumulation</strong>. Instead of processing 524K tokens at once, process them in 2 chunks of 262K. Run the forward and backward pass on each chunk, and the gradients <em>add up</em>. Then do one optimizer step using the accumulated gradients.</p>
+
+  <div class="code-block"><span class="c"># train.py lines 546-552</span>
+<span class="k">for</span> micro_step <span class="k">in</span> range(grad_accum_steps):   <span class="c"># 2 micro-steps</span>
+    <span class="k">with</span> autocast_ctx:
+        loss = model(x, y)
+    train_loss = loss.detach()
+    loss = loss / grad_accum_steps   <span class="c"># scale so gradients average correctly</span>
+    loss.backward()                  <span class="c"># gradients ACCUMULATE (add to existing)</span>
+    x, y, epoch = next(train_loader) <span class="c"># prefetch next batch while GPU works</span></div>
+
+  <p>The <code>loss / grad_accum_steps</code> is important: if you run two backward passes and add the gradients, you need to divide each by 2 so the total is an average, not a sum. Otherwise you'd be taking steps twice as large as intended.</p>
+
+  <div class="insight">
+    <div class="insight-title">Why such a big batch?</div>
+    Bigger batches give more stable gradient estimates. With 128 sequences, the gradient might point in a slightly wrong direction just because of the random sample. With 524K tokens, the noise averages out and each step is more reliable. The tradeoff: bigger batches use more compute per step, so you take fewer steps in the same time budget. 524K tokens is the sweet spot this codebase has settled on.
+  </div>
+</div>
+
+<!-- ============================================ -->
+<div class="section">
+  <span class="section-num">PART 3</span>
+  <h2>Backward Pass: "Whose Fault Is It?"</h2>
+
+  <p><code>loss.backward()</code> is where the magic of learning happens. It's a single line of code that triggers <strong>backpropagation</strong>, the algorithm that figures out how much each of the 50 million parameters contributed to the error.</p>
+
+  <p>Here's the intuition. The loss is a single number that depends on a long chain of operations:</p>
+
+  <p style="text-align: center; font-size: 14px; color: #666; margin: 16px 0;">
+    tokens &rarr; embeddings &rarr; attention &rarr; MLP &rarr; ... 8 layers ... &rarr; logits &rarr; <strong>loss</strong>
+  </p>
+
+  <p>Backpropagation walks this chain <strong>in reverse</strong>. Starting from the loss, it asks at each step: "If I tweaked this parameter slightly, would the loss go up or down? By how much?" The answer is the <strong>gradient</strong> for that parameter.</p>
+
+  <ul>
+    <li>A large positive gradient means "increasing this parameter would increase the loss (make things worse)"</li>
+    <li>A large negative gradient means "increasing this parameter would decrease the loss (make things better)"</li>
+    <li>A near-zero gradient means "this parameter doesn't matter much for this batch"</li>
+  </ul>
+
+  <p>After <code>loss.backward()</code>, every parameter in the model has a <code>.grad</code> attribute: a number (or tensor of numbers, matching the parameter's shape) that says which direction to nudge it.</p>
+
+  <div class="callout">
+    <div class="callout-title">Why "backward"?</div>
+    The forward pass goes input &rarr; output. Backpropagation goes output &rarr; input, using the chain rule from calculus. You don't need to understand the math, but the key property is: it computes all 50 million gradients in roughly the same time as one forward pass. That's what makes training neural networks practical. Without backpropagation, you'd have to wiggle each parameter individually and measure the effect, which would take 50 million forward passes per step.
+  </div>
+</div>
+
+<!-- ============================================ -->
+<div class="section">
+  <span class="section-num">PART 4</span>
+  <h2>The Two Optimizers: AdamW and Muon</h2>
+
+  <p>Now we have gradients for every parameter. The optimizer's job: use those gradients to actually update the parameters. This model uses <strong>two different optimizers</strong> for different types of parameters.</p>
+
+  <div class="opt-grid">
+    <div class="opt-card adamw">
+      <h4>AdamW</h4>
+      <p>The industry standard. Used for:</p>
+      <ul>
+        <li><strong>Token embeddings</strong> (wte), lr: 0.6</li>
+        <li><strong>Value embeddings</strong>, lr: 0.6</li>
+        <li><strong>Output head</strong> (lm_head), lr: 0.004</li>
+        <li><strong>Lambda scalars</strong>, lr: 0.5</li>
+      </ul>
+      <p style="margin-top: 8px; font-size: 12px; color: #666;">Tracks a running average of gradients AND a running average of squared gradients. Parameters that have been getting consistent gradients get bigger updates. Parameters with noisy gradients get smaller, more cautious updates.</p>
+    </div>
+    <div class="opt-card muon">
+      <h4>Muon</h4>
+      <p>A newer optimizer. Used for:</p>
+      <ul>
+        <li><strong>All matrix parameters</strong> inside the 8 transformer blocks (Q, K, V, projections, MLP weights), lr: 0.04</li>
+      </ul>
+      <p style="margin-top: 8px; font-size: 12px; color: #666;">Uses "polar express orthogonalization" to find update directions that are maximally diverse, preventing different parameters from all trying to learn the same thing. Especially effective for the large matrix multiplications inside transformer blocks.</p>
+    </div>
+  </div>
+
+  <div class="code-block"><span class="c"># train.py line 421-426: the optimizer dispatches by kind</span>
+<span class="k">def</span> step(self):
+    <span class="k">for</span> group <span class="k">in</span> self.param_groups:
+        <span class="k">if</span> group[<span class="s">'kind'</span>] == <span class="s">'adamw'</span>:
+            self._step_adamw(group)
+        <span class="k">elif</span> group[<span class="s">'kind'</span>] == <span class="s">'muon'</span>:
+            self._step_muon(group)</div>
+
+  <p>Notice the wildly different learning rates. The output head (lm_head) gets lr: 0.004, while token embeddings get lr: 0.6, which is 150x larger. This isn't arbitrary. The output head transforms 768-dimensional vectors into 32,768 vocabulary scores. A small change in those weights has a huge effect on predictions. The embeddings are a lookup table: changing one token's embedding only affects sequences containing that token, so you can afford to be more aggressive.</p>
+
+  <div class="insight">
+    <div class="insight-title">Why two optimizers?</div>
+    Different types of parameters have different geometry. Embedding tables are high-dimensional lookup tables where each row is mostly independent. Matrix parameters in attention and MLPs are densely interconnected: changing one entry affects every input that passes through it. Muon is designed specifically for that dense, interconnected case. Using the right optimizer for each type of parameter gets better results in the same number of steps.
+  </div>
+</div>
+
+<!-- ============================================ -->
+<div class="section">
+  <span class="section-num">PART 5</span>
+  <h2>Learning Rate Schedules: How Fast to Learn, and When</h2>
+
+  <p>The learning rate controls step size: how much to adjust parameters on each step. But the right step size changes over the course of training. This model uses a three-phase schedule:</p>
+
+  <div style="margin: 20px 0;">
+    <div class="schedule-chart">
+      <!-- Steady: 0% to 50% -->
+      <div class="schedule-bar" style="height: 100%;"></div>
+      <div class="schedule-bar" style="height: 100%;"></div>
+      <div class="schedule-bar" style="height: 100%;"></div>
+      <div class="schedule-bar" style="height: 100%;"></div>
+      <div class="schedule-bar" style="height: 100%;"></div>
+      <div class="schedule-bar" style="height: 100%;"></div>
+      <div class="schedule-bar" style="height: 100%;"></div>
+      <div class="schedule-bar" style="height: 100%;"></div>
+      <div class="schedule-bar" style="height: 100%;"></div>
+      <div class="schedule-bar" style="height: 100%;"></div>
+      <!-- Warmdown: 50% to 100% -->
+      <div class="schedule-bar" style="height: 90%;"></div>
+      <div class="schedule-bar" style="height: 80%;"></div>
+      <div class="schedule-bar" style="height: 70%;"></div>
+      <div class="schedule-bar" style="height: 60%;"></div>
+      <div class="schedule-bar" style="height: 50%;"></div>
+      <div class="schedule-bar" style="height: 40%;"></div>
+      <div class="schedule-bar" style="height: 30%;"></div>
+      <div class="schedule-bar" style="height: 20%;"></div>
+      <div class="schedule-bar" style="height: 10%;"></div>
+      <div class="schedule-bar" style="height: 2%;"></div>
+      <span class="schedule-label left">0%</span>
+      <span class="schedule-label mid">50% (warmdown starts)</span>
+      <span class="schedule-label right">100%</span>
+    </div>
+    <div style="text-align: center; font-size: 12px; color: #666; margin-top: 28px;">Learning rate multiplier over the course of training</div>
+  </div>
+
+  <div class="code-block"><span class="c"># train.py lines 518-525</span>
+<span class="k">def</span> get_lr_multiplier(progress):
+    <span class="k">if</span> progress < WARMUP_RATIO:           <span class="c"># Phase 1: warmup (0% here)</span>
+        <span class="k">return</span> progress / WARMUP_RATIO
+    <span class="k">elif</span> progress < <span class="n">1.0</span> - WARMDOWN_RATIO:  <span class="c"># Phase 2: full speed (0% to 50%)</span>
+        <span class="k">return</span> <span class="n">1.0</span>
+    <span class="k">else</span>:                                 <span class="c"># Phase 3: warmdown (50% to 100%)</span>
+        cooldown = (<span class="n">1.0</span> - progress) / WARMDOWN_RATIO
+        <span class="k">return</span> cooldown * <span class="n">1.0</span> + (<span class="n">1</span> - cooldown) * FINAL_LR_FRAC</div>
+
+  <p>In the default config: <code>WARMUP_RATIO = 0.0</code> (no warmup), <code>WARMDOWN_RATIO = 0.5</code> (second half is cooldown), <code>FINAL_LR_FRAC = 0.0</code> (learning rate drops to zero).</p>
+
+  <p>So the model runs at full learning rate for the first half of training, then linearly decays to zero. By the end, it's making extremely tiny adjustments, fine-tuning what it's already learned rather than making big swings.</p>
+
+  <h3>Three more schedules</h3>
+
+  <p>The learning rate isn't the only thing that changes. Muon's parameters also shift over training:</p>
+
+  <div class="code-block"><span class="c"># Muon momentum: ramps from 0.85 to 0.95 over first 300 steps</span>
+<span class="k">def</span> get_muon_momentum(step):
+    frac = min(step / <span class="n">300</span>, <span class="n">1</span>)
+    <span class="k">return</span> (<span class="n">1</span> - frac) * <span class="n">0.85</span> + frac * <span class="n">0.95</span>
+
+<span class="c"># Weight decay: starts at 0.2, decays to 0 by end of training</span>
+<span class="k">def</span> get_weight_decay(progress):
+    <span class="k">return</span> WEIGHT_DECAY * (<span class="n">1</span> - progress)</div>
+
+  <p><strong>Momentum</strong> controls how much the optimizer remembers from previous steps. Low momentum (0.85) early on means "be responsive to new gradients." High momentum (0.95) later means "stay the course, don't overreact to noise."</p>
+
+  <p><strong>Weight decay</strong> is a regularization technique: it gently pushes all parameters toward zero, preventing any single parameter from growing too large. It starts at 0.2 and fades to 0, so the model is regularized while it's learning big patterns but left alone when it's fine-tuning.</p>
+</div>
+
+<!-- ============================================ -->
+<div class="section">
+  <span class="section-num">PART 6</span>
+  <h2>The Full Step: Putting It All Together</h2>
+
+  <p>Here's every step of the loop with line numbers, showing how the pieces connect:</p>
+
+  <div class="code-block"><span class="c"># train.py lines 543-604</span>
+<span class="k">while</span> True:
+    t0 = time.time()
+
+    <span class="c"># === ACCUMULATE GRADIENTS ===</span>
+    <span class="k">for</span> micro_step <span class="k">in</span> range(grad_accum_steps):   <span class="c"># 2 micro-steps</span>
+        loss = model(x, y)                        <span class="c"># forward pass</span>
+        loss = loss / grad_accum_steps             <span class="c"># scale for averaging</span>
+        loss.backward()                            <span class="c"># backward pass (gradients accumulate)</span>
+        x, y, epoch = next(train_loader)           <span class="c"># prefetch next batch</span>
+
+    <span class="c"># === COMPUTE SCHEDULES ===</span>
+    progress = total_training_time / TIME_BUDGET   <span class="c"># 0.0 to 1.0</span>
+    lrm = get_lr_multiplier(progress)              <span class="c"># learning rate decay</span>
+    <span class="k">for</span> group <span class="k">in</span> optimizer.param_groups:
+        group[<span class="s">"lr"</span>] = group[<span class="s">"initial_lr"</span>] * lrm    <span class="c"># apply schedule to all groups</span>
+
+    <span class="c"># === UPDATE PARAMETERS ===</span>
+    optimizer.step()                               <span class="c"># AdamW + Muon update all 50M params</span>
+    model.zero_grad(set_to_none=True)              <span class="c"># clear gradients for next step</span>
+
+    <span class="c"># === TIMING ===</span>
+    dt = time.time() - t0
+    <span class="k">if</span> step > <span class="n">10</span>:                                <span class="c"># skip first 10 steps (compilation)</span>
+        total_training_time += dt
+
+    <span class="c"># === STOP CONDITION ===</span>
+    <span class="k">if</span> step > <span class="n">10</span> <span class="k">and</span> total_training_time >= TIME_BUDGET:
+        <span class="k">break</span></div>
+
+  <p>Every line serves a purpose. There's no ceremony, no configuration framework, no abstraction layers. This is the inner loop that trains the model, and it's under 30 lines.</p>
+</div>
+
+<!-- ============================================ -->
+<div class="section">
+  <span class="section-num">PART 7</span>
+  <h2>The Time Budget: A Fixed Constraint</h2>
+
+  <p>Most training runs are defined by "train for N steps" or "train for N epochs." Autoresearch does something different: <strong>train for exactly 5 minutes</strong> (300 seconds, set in <code>prepare.py</code>).</p>
+
+  <div class="code-block"><span class="c"># Progress is based on wall-clock time, not steps</span>
+progress = min(total_training_time / TIME_BUDGET, <span class="n">1.0</span>)</div>
+
+  <p>This is what makes experiments comparable. A model that's twice as deep takes roughly twice as long per step, so it gets half as many steps in 5 minutes. But the learning rate schedule still covers the full warmdown curve, because everything is pegged to progress (0.0 to 1.0), not step count.</p>
+
+  <h3>The 10-step exclusion</h3>
+  <p>The first 10 steps don't count toward the time budget:</p>
+
+  <div class="code-block"><span class="k">if</span> step > <span class="n">10</span>:
+    total_training_time += dt</div>
+
+  <p>Why? PyTorch's <code>torch.compile</code> compiles the model on the first few forward passes. These steps are dramatically slower (sometimes 10-30x) as the compiler generates optimized GPU code. Counting them would penalize models that are harder to compile but might train faster once compiled. By excluding the first 10 steps, the time budget measures actual training speed.</p>
+
+  <div class="insight">
+    <div class="insight-title">The 5-minute budget as a design choice</div>
+    This constraint forces the autoresearch agent to find configurations that train efficiently within a fixed compute budget. A model that's theoretically better but too slow to converge in 5 minutes will lose to a simpler model that finishes its learning. This mirrors real-world constraints: you almost always have a fixed compute budget and need to find the best model that fits within it.
+  </div>
+</div>
+
+<!-- ============================================ -->
+<div class="section">
+  <span class="section-num">PART 8</span>
+  <h2>Monitoring: What Gets Logged Each Step</h2>
+
+  <p>Each step prints a single line with everything you need to know:</p>
+
+  <div class="code-block">step 00142 (47.3%) | loss: 2.481903 | lrm: 1.00 | dt: 627ms | tok/sec: 835,421 | mfu: 42.1% | epoch: 1 | remaining: 158s</div>
+
+  <p>Here's what each field means:</p>
+
+  <ul>
+    <li><strong>step 00142</strong>: which training step we're on</li>
+    <li><strong>(47.3%)</strong>: progress through the time budget</li>
+    <li><strong>loss: 2.481903</strong>: smoothed training loss (exponential moving average). Should be going down.</li>
+    <li><strong>lrm: 1.00</strong>: learning rate multiplier. 1.0 = full speed, drops during warmdown</li>
+    <li><strong>dt: 627ms</strong>: wall-clock time for this step (both micro-steps combined)</li>
+    <li><strong>tok/sec: 835,421</strong>: tokens processed per second. Higher = faster training</li>
+    <li><strong>mfu: 42.1%</strong>: Model FLOPs Utilization. What percentage of the GPU's theoretical peak is actually being used</li>
+    <li><strong>epoch: 1</strong>: how many times we've cycled through the full training dataset</li>
+    <li><strong>remaining: 158s</strong>: seconds left in the time budget</li>
+  </ul>
+
+  <h3>Smoothed loss</h3>
+  <p>The logged loss isn't the raw value from the current step. It's an exponential moving average (EMA):</p>
+
+  <div class="code-block">ema_beta = <span class="n">0.9</span>
+smooth_train_loss = <span class="n">0.9</span> * smooth_train_loss + <span class="n">0.1</span> * train_loss_f
+<span class="c"># Debias: corrects for the fact that early values are biased toward 0</span>
+debiased = smooth_train_loss / (<span class="n">1</span> - <span class="n">0.9</span>**(step + <span class="n">1</span>))</div>
+
+  <p>This smooths out the noise. Raw loss bounces around because each batch is a random sample. The EMA shows the trend: "are we generally improving?"</p>
+
+  <div class="callout">
+    <div class="callout-title">MFU: the efficiency metric</div>
+    MFU tells you how well you're using the hardware. An H100 can theoretically do 989.5 trillion bf16 operations per second. If your training is doing 416 trillion per second, that's 42.1% MFU. The gap comes from memory access time, data loading, Python overhead, and operations that can't fully saturate the GPU. 40-50% is typical for well-optimized single-GPU training. Getting above 60% usually requires multi-GPU setups with careful overlap of compute and communication.
+  </div>
+</div>
+
+<!-- ============================================ -->
+<div class="section">
+  <span class="section-num">PART 9</span>
+  <h2>Safety Checks and Housekeeping</h2>
+
+  <h3>Fast fail: catch explosions early</h3>
+  <div class="code-block"><span class="c"># train.py lines 570-572</span>
+<span class="k">if</span> math.isnan(train_loss_f) <span class="k">or</span> train_loss_f > <span class="n">100</span>:
+    print(<span class="s">"FAIL"</span>)
+    exit(<span class="n">1</span>)</div>
+
+  <p>If the loss becomes NaN (not a number) or explodes above 100, something has gone fundamentally wrong, usually a learning rate that's way too high. No point continuing. The script exits immediately so autoresearch can try a different configuration.</p>
+
+  <h3>Garbage collection management</h3>
+  <div class="code-block"><span class="c"># train.py lines 593-598</span>
+<span class="k">if</span> step == <span class="n">0</span>:
+    gc.collect()    <span class="c"># clean up setup allocations</span>
+    gc.freeze()     <span class="c"># mark everything as permanent</span>
+    gc.disable()    <span class="c"># stop automatic garbage collection</span>
+<span class="k">elif</span> (step + <span class="n">1</span>) % <span class="n">5000</span> == <span class="n">0</span>:
+    gc.collect()    <span class="c"># occasional manual cleanup</span></div>
+
+  <p>Python's automatic garbage collector can pause execution for ~500 milliseconds, which is nearly a full training step. The code disables it after the first step and only runs it manually every 5,000 steps. This is a performance optimization specific to tight training loops where every millisecond matters.</p>
+</div>
+
+<!-- ============================================ -->
+<div class="section">
+  <span class="section-num">PART 10</span>
+  <h2>After the Loop: Final Evaluation</h2>
+
+  <p>When time runs out, the loop breaks and the model gets its final exam:</p>
+
+  <div class="code-block"><span class="c"># train.py lines 611-613</span>
+model.eval()                          <span class="c"># switch to evaluation mode</span>
+<span class="k">with</span> autocast_ctx:
+    val_bpb = evaluate_bpb(model, tokenizer, DEVICE_BATCH_SIZE)</div>
+
+  <p><code>model.eval()</code> turns off any training-specific behavior (this model doesn't have dropout, but it's good practice). Then <code>evaluate_bpb</code> from <code>prepare.py</code> runs the model on the held-out validation set and computes bits per byte: the single number that determines whether this experiment was better than the last one.</p>
+
+  <p>The final summary prints everything autoresearch needs to decide:</p>
+
+  <div class="code-block">---
+val_bpb:          1.187432     <span class="c"># THE metric. Lower is better.</span>
+training_seconds: 300.1        <span class="c"># How long actual training took</span>
+total_seconds:    312.4        <span class="c"># Including setup and evaluation</span>
+peak_vram_mb:     14230.1      <span class="c"># Max GPU memory used</span>
+mfu_percent:      43.21        <span class="c"># Average hardware utilization</span>
+total_tokens_M:   251.7        <span class="c"># Millions of tokens processed</span>
+num_steps:        480          <span class="c"># Total optimizer steps taken</span>
+num_params_M:     50.3         <span class="c"># Model size in millions</span>
+depth:            8            <span class="c"># Number of layers</span></div>
+
+  <p>The autoresearch agent reads this output, compares val_bpb to the best previous run, and decides what to try next. If this run improved, the change sticks. If not, it gets discarded. That's the outer loop: the AI researcher running experiments on the AI model.</p>
+</div>
+
+<!-- ============================================ -->
+<div class="section">
+  <span class="section-num">FULL PICTURE</span>
+  <h2>The Complete Timeline of a Training Run</h2>
+
+  <div class="timeline">
+    <div class="timeline-event">
+      <div class="time">t = 0s</div>
+      <div class="desc"><strong>Setup.</strong> Build model (50M params, all random), create optimizers, load data, compile with torch.compile.</div>
+    </div>
+    <div class="timeline-event">
+      <div class="time">Steps 0-10 (not timed)</div>
+      <div class="desc"><strong>Compilation warmup.</strong> First passes trigger PyTorch compilation. Slow, doesn't count toward budget.</div>
+    </div>
+    <div class="timeline-event">
+      <div class="time">0% - 50% of budget</div>
+      <div class="desc"><strong>Full-speed training.</strong> Learning rate at maximum. Loss drops rapidly from ~10 to ~3. Model learns basic language patterns: common words, simple grammar, frequent phrases.</div>
+    </div>
+    <div class="timeline-event">
+      <div class="time">50% - 100% of budget</div>
+      <div class="desc"><strong>Warmdown.</strong> Learning rate decays linearly to 0. Loss drops more slowly from ~3 toward ~2. Model refines: better grammar, more coherent predictions, nuanced word choice.</div>
+    </div>
+    <div class="timeline-event">
+      <div class="time">Time's up</div>
+      <div class="desc"><strong>Final exam.</strong> Model switches to eval mode. Runs on validation data it has never trained on. Computes val_bpb. Prints summary.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<div class="section">
+  <span class="section-num">RECAP</span>
+  <h2>The Training Loop in One Paragraph</h2>
+
+  <p>The training loop feeds batches of tokens through the model (forward pass), measures how wrong the predictions are (loss), traces that error backward through every layer to compute a gradient for each of the 50M parameters (backward pass), then uses two optimizers to nudge those parameters in the direction that reduces loss (AdamW for embeddings and scalars, Muon for matrix weights). The learning rate starts high and decays to zero over the second half of the 5-minute budget. Every step processes 524K tokens, logging loss, speed, and GPU utilization. When time runs out, the model is evaluated on held-out data and the result, val_bpb, is the single number that determines if this experiment was a success.</p>
+</div>
+
+<!-- ============================================ -->
+<div class="section" style="background: #f0f4ff; border-color: #c5cae9;">
+  <span class="section-num" style="background: #3f51b5;">WHAT YOU NOW KNOW</span>
+  <h2>The Full Stack</h2>
+  <p>With Lessons 1-4, you can now trace every step from raw text to trained model:</p>
+  <ol>
+    <li><strong>Lesson 1:</strong> The three-file structure. program.md directs the AI researcher, train.py is the experiment, prepare.py is the lab equipment.</li>
+    <li><strong>Lesson 2:</strong> Data pipeline. Text &rarr; tokens &rarr; batches &rarr; input/target pairs. The model always predicts the next token.</li>
+    <li><strong>Lesson 3:</strong> Model architecture. Embeddings &rarr; 8 layers of attention + MLP &rarr; output head. 50M learnable parameters.</li>
+    <li><strong>Lesson 4:</strong> Training loop. Forward, loss, backward, optimize, repeat for 5 minutes. Two optimizers, scheduled learning rates, time-based stopping.</li>
+  </ol>
+  <p style="margin-top: 16px;">Next could go in several directions: the hyperparameter search space (what the AI researcher actually tweaks between experiments), how program.md orchestrates the research agent, or running an actual experiment. What interests you?</p>
+</div>
+
+</body>
+</html>

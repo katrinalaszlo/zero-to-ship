@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lesson 2: The Data Pipeline</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #f8f9fa;
+    color: #1a1a1a;
+    padding: 40px 24px;
+    max-width: 900px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+  h1 { font-size: 24px; font-weight: 600; margin-bottom: 6px; }
+  .subtitle { color: #666; font-size: 14px; margin-bottom: 40px; }
+  h2 { font-size: 18px; font-weight: 600; margin: 36px 0 16px; }
+  h3 { font-size: 15px; font-weight: 600; margin: 24px 0 10px; color: #333; }
+  p { margin-bottom: 14px; font-size: 15px; }
+  .section {
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 10px;
+    padding: 24px;
+    margin-bottom: 24px;
+  }
+  .section-num {
+    display: inline-block;
+    background: #1a1a1a;
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 10px;
+    margin-bottom: 12px;
+  }
+  code {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    background: #f0f0f0;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 13px;
+  }
+  .code-block {
+    background: #1a1a1a;
+    color: #e0e0e0;
+    padding: 16px 20px;
+    border-radius: 8px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 13px;
+    line-height: 1.5;
+    overflow-x: auto;
+    margin: 12px 0;
+  }
+  .code-block .comment { color: #6a9955; }
+  .code-block .keyword { color: #569cd6; }
+  .code-block .number { color: #b5cea8; }
+  .code-block .string { color: #ce9178; }
+  .code-block .highlight { background: #264f78; display: inline; padding: 1px 4px; border-radius: 3px; }
+
+  /* Pipeline diagram */
+  .pipeline {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin: 20px 0;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .pipe-stage {
+    text-align: center;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    min-width: 100px;
+  }
+  .pipe-arrow {
+    font-size: 20px;
+    color: #999;
+    padding: 0 4px;
+  }
+  .stage-data { background: #e8f5e9; border: 1px solid #a5d6a7; }
+  .stage-process { background: #e3f2fd; border: 1px solid #90caf9; }
+  .stage-output { background: #fff3e0; border: 1px solid #ffcc80; }
+  .stage-metric { background: #fce4ec; border: 1px solid #ef9a9a; }
+
+  /* Token visualization */
+  .token-viz {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin: 12px 0;
+    align-items: center;
+  }
+  .token {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-family: 'SF Mono', monospace;
+    font-size: 12px;
+    border: 1px solid;
+  }
+  .token-word { background: #e3f2fd; border-color: #90caf9; color: #1565c0; }
+  .token-space { background: #f3e5f5; border-color: #ce93d8; color: #7b1fa2; }
+  .token-punct { background: #fff3e0; border-color: #ffcc80; color: #e65100; }
+  .token-num { background: #e8f5e9; border-color: #a5d6a7; color: #2e7d32; }
+  .token-special { background: #fce4ec; border-color: #ef9a9a; color: #c62828; }
+  .token-id {
+    font-size: 10px;
+    color: #999;
+    display: block;
+    text-align: center;
+    margin-top: 2px;
+  }
+
+  /* Batch grid */
+  .batch-grid {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 4px 12px;
+    margin: 16px 0;
+    font-size: 13px;
+    font-family: 'SF Mono', monospace;
+  }
+  .batch-label {
+    color: #666;
+    text-align: right;
+    padding: 4px 0;
+  }
+  .batch-row {
+    display: flex;
+    gap: 2px;
+  }
+  .batch-cell {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    border-radius: 3px;
+  }
+  .cell-bos { background: #fce4ec; color: #c62828; font-weight: 600; }
+  .cell-doc1 { background: #e3f2fd; color: #1565c0; }
+  .cell-doc2 { background: #e8f5e9; color: #2e7d32; }
+  .cell-doc3 { background: #fff3e0; color: #e65100; }
+  .cell-doc4 { background: #f3e5f5; color: #7b1fa2; }
+
+  /* BPB explanation */
+  .bpb-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin: 12px 0;
+    padding: 12px;
+    background: #fafafa;
+    border-radius: 8px;
+    border-left: 3px solid #1a1a1a;
+  }
+  .bpb-num {
+    font-weight: 700;
+    font-size: 14px;
+    color: #1a1a1a;
+    min-width: 24px;
+  }
+  .bpb-text { font-size: 14px; }
+
+  .callout {
+    background: #fffde7;
+    border: 1px solid #fff9c4;
+    border-left: 3px solid #fbc02d;
+    padding: 14px 16px;
+    border-radius: 0 8px 8px 0;
+    margin: 16px 0;
+    font-size: 14px;
+  }
+  .callout-title {
+    font-weight: 600;
+    margin-bottom: 4px;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #f57f17;
+  }
+
+  .insight {
+    background: #e8eaf6;
+    border: 1px solid #c5cae9;
+    border-left: 3px solid #3f51b5;
+    padding: 14px 16px;
+    border-radius: 0 8px 8px 0;
+    margin: 16px 0;
+    font-size: 14px;
+  }
+  .insight-title {
+    font-weight: 600;
+    margin-bottom: 4px;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #283593;
+  }
+
+  .shift-diagram {
+    display: flex;
+    gap: 2px;
+    margin: 8px 0;
+    font-family: 'SF Mono', monospace;
+    font-size: 12px;
+  }
+  .shift-cell {
+    width: 36px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 3px;
+  }
+  .shift-input { background: #e3f2fd; color: #1565c0; border: 1px solid #90caf9; }
+  .shift-target { background: #fff3e0; color: #e65100; border: 1px solid #ffcc80; }
+  .shift-label { color: #666; font-size: 11px; min-width: 56px; display: flex; align-items: center; }
+
+  .constants-grid {
+    display: grid;
+    grid-template-columns: auto auto 1fr;
+    gap: 6px 16px;
+    margin: 12px 0;
+    font-size: 14px;
+  }
+  .const-name {
+    font-family: 'SF Mono', monospace;
+    font-size: 13px;
+    color: #1565c0;
+  }
+  .const-val {
+    font-family: 'SF Mono', monospace;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .const-desc { color: #666; }
+</style>
+</head>
+<body>
+
+<h1>Lesson 2: The Data Pipeline</h1>
+<p class="subtitle">How text becomes numbers, gets fed to the model, and gets measured</p>
+
+<!-- ============================================ -->
+<div class="section">
+  <span class="section-num">BIG PICTURE</span>
+  <h2>The Full Pipeline</h2>
+  <p>Everything in ML follows this flow. The model never sees text. It only sees numbers.</p>
+
+  <div class="pipeline">
+    <div class="pipe-stage stage-data">Raw text<br><small>parquet files</small></div>
+    <div class="pipe-arrow">&rarr;</div>
+    <div class="pipe-stage stage-process">Tokenizer<br><small>text &rarr; integers</small></div>
+    <div class="pipe-arrow">&rarr;</div>
+    <div class="pipe-stage stage-process">Dataloader<br><small>pack into batches</small></div>
+    <div class="pipe-arrow">&rarr;</div>
+    <div class="pipe-stage stage-output">Model<br><small>predict next token</small></div>
+    <div class="pipe-arrow">&rarr;</div>
+    <div class="pipe-stage stage-metric">Loss / BPB<br><small>how wrong was it?</small></div>
+  </div>
+
+  <p><code>prepare.py</code> owns everything except "Model." It's the lab equipment: it prepares the data, feeds it to whatever model <code>train.py</code> builds, and measures the result.</p>
+</div>
+
+<!-- ============================================ -->
+<div class="section">
+  <span class="section-num">PART 1</span>
+  <h2>The Constants: What's Fixed</h2>
+  <p>These are the rules of the experiment that nobody gets to change. They exist in <code>prepare.py</code> so that every experiment is measured on equal terms.</p>
+
+  <div class="constants-grid">
+    <span class="const-name">MAX_SEQ_LEN</span>
+    <span class="const-val">2,048</span>
+    <span class="const-desc">How many tokens the model sees at once (its "context window")</span>
+
+    <span class="const-name">TIME_BUDGET</span>
+    <span class="const-val">300</span>
+    <span class="const-desc">Training time in seconds. 5 minutes, hard stop.</span>
+
+    <span class="const-name">EVAL_TOKENS</span>
+    <span class="const-val">~21M</span>
+    <span class="const-desc">How many tokens to evaluate on (40 batches of 524,288)</span>
+
+    <span class="const-name">VOCAB_SIZE</span>
+    <span class="const-val">8,192</span>
+    <span class="const-desc">Total number of unique tokens the model can recognize</span>
+  </div>
+
+  <div class="callout">
+    <div class="callout-title">Why this matters</div>
+    <code>VOCAB_SIZE = 8,192</code> is unusually small. GPT-4 uses ~100,000. A smaller vocabulary means each token represents less text, so you need more tokens to encode the same content. But the model has fewer things to learn. It's a deliberate tradeoff for a 5-minute experiment: simplify the problem so small models can make progress.
+  </div>
+</div>
+
+<!-- ============================================ -->
+<div class="section">
+  <span class="section-num">PART 2</span>
+  <h2>Tokenization: Text &rarr; Numbers</h2>
+
+  <p>The tokenizer converts text into a sequence of integer IDs. It uses <strong>BPE</strong> (Byte Pair Encoding): start with individual characters, then repeatedly merge the most common adjacent pairs into single tokens.</p>
+
+  <h3>Example: "Hello world! 42"</h3>
+
+  <div class="token-viz">
+    <div>
+      <div class="token token-special">BOS</div>
+      <span class="token-id">8188</span>
+    </div>
+    <div>
+      <div class="token token-word">Hell</div>
+      <span class="token-id">2401</span>
+    </div>
+    <div>
+      <div class="token token-word">o</div>
+      <span class="token-id">111</span>
+    </div>
+    <div>
+      <div class="token token-space">&nbsp;world</div>
+      <span class="token-id">1844</span>
+    </div>
+    <div>
+      <div class="token token-punct">!</div>
+      <span class="token-id">33</span>
+    </div>
+    <div>
+      <div class="token token-space">&nbsp;</div>
+      <span class="token-id">32</span>
+    </div>
+    <div>
+      <div class="token token-num">42</div>
+      <span class="token-id">5318</span>
+    </div>
+  </div>
+
+  <p style="margin-top: 16px;">Notice a few things:</p>
+  <ul style="margin: 8px 0 12px 20px; font-size: 14px;">
+    <li><strong>BOS token</strong> (Beginning of Sequence) marks where a new document starts. ID 8188.</li>
+    <li><strong>Spaces get attached</strong> to the word that follows them (" world" is one token, not "world").</li>
+    <li><strong>Common words</strong> become single tokens. Rare words get split into pieces.</li>
+    <li><strong>Numbers are capped at 2 digits</strong> per token (the regex pattern <code>\p{N}{1,2}</code>). "123" would be split into "12" + "3".</li>
+  </ul>
+
+  <div class="insight">
+    <div class="insight-title">Connection to prepare.py</div>
+    The tokenizer is trained once by <code>prepare.py</code> and saved to <code>~/.cache/autoresearch/tokenizer/</code>. The training process reads a billion characters of text and learns which byte pairs to merge. Lines 141-203.
+  </div>
+</div>
+
+<!-- ============================================ -->
+<div class="section">
+  <span class="section-num">PART 3</span>
+  <h2>The Dataloader: Packing Tokens into Batches</h2>
+
+  <p>The model doesn't process one document at a time. It processes a <strong>batch</strong> of fixed-size rows simultaneously. Each row is exactly <code>MAX_SEQ_LEN + 1 = 2,049</code> tokens long.</p>
+
+  <p>The dataloader's job: take a stream of variable-length documents and pack them tightly into fixed-size rows, with zero wasted space.</p>
+
+  <h3>How packing works</h3>
+  <p>Imagine you have documents of different lengths and rows that hold 12 tokens each:</p>
+
+  <div class="batch-grid">
+    <div class="batch-label">Row 0:</div>
+    <div class="batch-row">
+      <div class="batch-cell cell-bos">B</div>
+      <div class="batch-cell cell-doc1">a</div>
+      <div class="batch-cell cell-doc1">a</div>
+      <div class="batch-cell cell-doc1">a</div>
+      <div class="batch-cell cell-doc1">a</div>
+      <div class="batch-cell cell-bos">B</div>
+      <div class="batch-cell cell-doc2">b</div>
+      <div class="batch-cell cell-doc2">b</div>
+      <div class="batch-cell cell-doc2">b</div>
+      <div class="batch-cell cell-doc2">b</div>
+      <div class="batch-cell cell-doc2">b</div>
+      <div class="batch-cell cell-doc2">b</div>
+    </div>
+    <div class="batch-label">Row 1:</div>
+    <div class="batch-row">
+      <div class="batch-cell cell-bos">B</div>
+      <div class="batch-cell cell-doc3">c</div>
+      <div class="batch-cell cell-doc3">c</div>
+      <div class="batch-cell cell-doc3">c</div>
+      <div class="batch-cell cell-doc3">c</div>
+      <div class="batch-cell cell-doc3">c</div>
+      <div class="batch-cell cell-doc3">c</div>
+      <div class="batch-cell cell-doc3">c</div>
+      <div class="batch-cell cell-doc3">c</div>
+      <div class="batch-cell cell-bos">B</div>
+      <div class="batch-cell cell-doc4">d</div>
+      <div class="batch-cell cell-doc4">d</div>
+    </div>
+  </div>
+
+  <p style="font-size: 13px; color: #666; margin-top: 4px;">
+    <strong>B</strong> = BOS token &nbsp;|&nbsp;
+    <span style="color: #1565c0;">a</span> = Doc A (4 tokens) &nbsp;|&nbsp;
+    <span style="color: #2e7d32;">b</span> = Doc B (6 tokens) &nbsp;|&nbsp;
+    <span style="color: #e65100;">c</span> = Doc C (8 tokens) &nbsp;|&nbsp;
+    <span style="color: #7b1fa2;">d</span> = Doc D (cropped to fit)
+  </p>
+
+  <p style="margin-top: 12px;">Key details:</p>
+  <ul style="margin: 8px 0 12px 20px; font-size: 14px;">
+    <li>Every document starts with a <strong>BOS token</strong>, so the model always knows "a new document begins here."</li>
+    <li>It uses <strong>best-fit packing</strong>: find the largest document that fits the remaining space. Like Tetris.</li>
+    <li>If nothing fits, it <strong>crops the shortest document</strong> in the buffer to fill exactly. 100% utilization, no padding.</li>
+    <li>The buffer holds ~1,000 documents to choose from, giving it good packing options.</li>
+  </ul>
+
+  <div class="callout">
+    <div class="callout-title">Why packing matters</div>
+    The naive approach would be: one document per row, pad the rest with zeros. But padding tokens are wasted compute: the model processes them but learns nothing. With packing, every single token the model sees is real data. At 524K tokens per step, even 5% padding waste would mean ~26K wasted tokens per step.
+  </div>
+</div>
+
+<!-- ============================================ -->
+<div class="section">
+  <span class="section-num">PART 4</span>
+  <h2>Inputs and Targets: The Shift</h2>
+
+  <p>The model's entire job is: <strong>given a sequence of tokens, predict the next one</strong>. To train this, we take each packed row and create two versions: <strong>inputs</strong> (everything except the last token) and <strong>targets</strong> (everything except the first token).</p>
+
+  <div style="margin: 16px 0;">
+    <div class="shift-diagram">
+      <div class="shift-label">Packed row:</div>
+      <div class="shift-cell shift-input">B</div>
+      <div class="shift-cell shift-input">The</div>
+      <div class="shift-cell shift-input">cat</div>
+      <div class="shift-cell shift-input">sat</div>
+      <div class="shift-cell shift-input">on</div>
+      <div class="shift-cell shift-input">the</div>
+      <div class="shift-cell shift-input">mat</div>
+    </div>
+    <div style="height: 8px;"></div>
+    <div class="shift-diagram">
+      <div class="shift-label">Input (x):</div>
+      <div class="shift-cell shift-input">B</div>
+      <div class="shift-cell shift-input">The</div>
+      <div class="shift-cell shift-input">cat</div>
+      <div class="shift-cell shift-input">sat</div>
+      <div class="shift-cell shift-input">on</div>
+      <div class="shift-cell shift-input">the</div>
+      <div class="shift-cell" style="background: #f5f5f5; color: #ccc; border: 1px dashed #ccc;">-</div>
+    </div>
+    <div style="height: 8px;"></div>
+    <div class="shift-diagram">
+      <div class="shift-label">Target (y):</div>
+      <div class="shift-cell" style="background: #f5f5f5; color: #ccc; border: 1px dashed #ccc;">-</div>
+      <div class="shift-cell shift-target">The</div>
+      <div class="shift-cell shift-target">cat</div>
+      <div class="shift-cell shift-target">sat</div>
+      <div class="shift-cell shift-target">on</div>
+      <div class="shift-cell shift-target">the</div>
+      <div class="shift-cell shift-target">mat</div>
+    </div>
+  </div>
+
+  <p>At each position, the model sees all tokens up to that point and tries to predict what comes next. After seeing "The cat sat," it should predict "on." After seeing "The cat sat on," it should predict "the."</p>
+
+  <p>This is why the row is <code>T + 1 = 2,049</code> tokens, but the model's sequence length is <code>T = 2,048</code>. You need one extra token so the last input position has a target to predict.</p>
+
+  <div class="code-block">
+    <span class="comment"># prepare.py lines 334-336: the shift</span><br>
+    cpu_inputs.copy_(row_buffer[:, :-1]) &nbsp; <span class="comment"># everything except last</span><br>
+    cpu_targets.copy_(row_buffer[:, 1:]) &nbsp; <span class="comment"># everything except first</span><br>
+    gpu_buffer.copy_(cpu_buffer, non_blocking=<span class="keyword">True</span>)
+  </div>
+</div>
+
+<!-- ============================================ -->
+<div class="section">
+  <span class="section-num">PART 5</span>
+  <h2>Evaluation: Bits Per Byte (BPB)</h2>
+
+  <p>This is the north star metric. You already know it means "how efficiently the model can predict text it hasn't seen." Here's what's actually happening in the code.</p>
+
+  <div class="bpb-step">
+    <div class="bpb-num">1.</div>
+    <div class="bpb-text">Feed validation data through the model. For each token position, the model outputs a probability distribution over all 8,192 possible next tokens.</div>
+  </div>
+
+  <div class="bpb-step">
+    <div class="bpb-num">2.</div>
+    <div class="bpb-text">Compute <strong>cross-entropy loss</strong> for each position: how surprised was the model by the actual next token? If the model assigned high probability to the correct token, the loss is low. If it was surprised, the loss is high. This is measured in <strong>nats</strong> (natural log units).</div>
+  </div>
+
+  <div class="bpb-step">
+    <div class="bpb-num">3.</div>
+    <div class="bpb-text">Here's the clever part: different tokens represent different amounts of text. The token " world" represents 6 bytes of UTF-8 text. The token "!" represents 1 byte. BPB normalizes by the number of <strong>bytes</strong>, not tokens. This makes the metric independent of vocabulary size.</div>
+  </div>
+
+  <div class="bpb-step">
+    <div class="bpb-num">4.</div>
+    <div class="bpb-text">Convert nats to bits (divide by ln(2)). The final number: <strong>total bits of surprise / total bytes of text</strong>.</div>
+  </div>
+
+  <div class="code-block">
+    <span class="comment"># prepare.py lines 344-365: the actual evaluation</span><br><br>
+    <span class="keyword">for</span> _ <span class="keyword">in</span> range(steps):<br>
+    &nbsp;&nbsp;x, y, _ = next(val_loader)<br>
+    &nbsp;&nbsp;loss_flat = model(x, y, reduction=<span class="string">'none'</span>).view(-<span class="number">1</span>)<br>
+    &nbsp;&nbsp;y_flat = y.view(-<span class="number">1</span>)<br>
+    &nbsp;&nbsp;nbytes = token_bytes[y_flat] &nbsp;<span class="comment"># how many UTF-8 bytes each target token represents</span><br>
+    &nbsp;&nbsp;mask = nbytes > <span class="number">0</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment"># skip special tokens (0 bytes)</span><br>
+    &nbsp;&nbsp;total_nats += (loss_flat * mask).sum()<br>
+    &nbsp;&nbsp;total_bytes += nbytes.sum()<br><br>
+    <span class="keyword">return</span> total_nats / (log(<span class="number">2</span>) * total_bytes) &nbsp;<span class="comment"># nats &rarr; bits, per byte</span>
+  </div>
+
+  <div class="insight">
+    <div class="insight-title">Why BPB instead of just loss?</div>
+    If you change the vocabulary size, the raw loss number changes even if the model is equally good. A model with 100K tokens will have lower per-token loss than one with 8K tokens (fewer, more informative tokens = easier predictions). BPB normalizes by bytes of actual text, so it's comparable across any tokenizer or vocabulary size. It's the metric equivalent of "cost per byte of text understood."
+  </div>
+</div>
+
+<!-- ============================================ -->
+<div class="section">
+  <span class="section-num">PART 6</span>
+  <h2>Putting It Together</h2>
+  <p>Here's the complete data flow with actual numbers from this repo:</p>
+
+  <div style="margin: 20px 0;">
+    <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+      <tr style="background: #f5f5f5;">
+        <td style="padding: 10px; font-weight: 600; border-bottom: 1px solid #e0e0e0;">Stage</td>
+        <td style="padding: 10px; font-weight: 600; border-bottom: 1px solid #e0e0e0;">What happens</td>
+        <td style="padding: 10px; font-weight: 600; border-bottom: 1px solid #e0e0e0;">Shape / Size</td>
+      </tr>
+      <tr>
+        <td style="padding: 10px; border-bottom: 1px solid #f0f0f0;">Parquet files</td>
+        <td style="padding: 10px; border-bottom: 1px solid #f0f0f0;">Raw text documents on disk</td>
+        <td style="padding: 10px; border-bottom: 1px solid #f0f0f0;">~6,500 shards</td>
+      </tr>
+      <tr>
+        <td style="padding: 10px; border-bottom: 1px solid #f0f0f0;">Tokenize</td>
+        <td style="padding: 10px; border-bottom: 1px solid #f0f0f0;">BPE encodes text to integer sequences</td>
+        <td style="padding: 10px; border-bottom: 1px solid #f0f0f0;">Variable-length lists of ints (0-8191)</td>
+      </tr>
+      <tr>
+        <td style="padding: 10px; border-bottom: 1px solid #f0f0f0;">Pack into rows</td>
+        <td style="padding: 10px; border-bottom: 1px solid #f0f0f0;">Best-fit pack documents into fixed rows</td>
+        <td style="padding: 10px; border-bottom: 1px solid #f0f0f0;">[128 rows x 2,049 tokens]</td>
+      </tr>
+      <tr>
+        <td style="padding: 10px; border-bottom: 1px solid #f0f0f0;">Shift</td>
+        <td style="padding: 10px; border-bottom: 1px solid #f0f0f0;">Split into inputs (x) and targets (y)</td>
+        <td style="padding: 10px; border-bottom: 1px solid #f0f0f0;">x: [128 x 2,048] &nbsp; y: [128 x 2,048]</td>
+      </tr>
+      <tr>
+        <td style="padding: 10px; border-bottom: 1px solid #f0f0f0;">Model forward</td>
+        <td style="padding: 10px; border-bottom: 1px solid #f0f0f0;">Predict next token at every position</td>
+        <td style="padding: 10px; border-bottom: 1px solid #f0f0f0;">logits: [128 x 2,048 x 8,192]</td>
+      </tr>
+      <tr>
+        <td style="padding: 10px;">Loss / BPB</td>
+        <td style="padding: 10px;">Compare predictions to actual targets</td>
+        <td style="padding: 10px;">Single number (e.g., 0.9979)</td>
+      </tr>
+    </table>
+  </div>
+
+  <p>That logits shape is worth pausing on: <code>[128 x 2,048 x 8,192]</code>. That's 128 rows, each with 2,048 positions, each outputting a probability over 8,192 possible next tokens. That's <strong>~2.1 billion numbers</strong> the model produces per batch. And then all of that gets collapsed down to a single loss number that says "you were this wrong."</p>
+</div>
+
+<!-- ============================================ -->
+<div class="section" style="background: #f0f4ff; border-color: #c5cae9;">
+  <span class="section-num" style="background: #3f51b5;">NEXT UP</span>
+  <h2>What's Inside the Model?</h2>
+  <p>Now you know how data gets prepared and measured. The next question: what happens inside the "Model" box? That's <code>train.py</code>, and it's where the architecture lives: embeddings, attention, MLPs, and how they stack together.</p>
+  <p>That's Lesson 3.</p>
+</div>
+
+</body>
+</html>

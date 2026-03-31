@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lesson 3: Inside the Model</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #f8f9fa;
+    color: #1a1a1a;
+    padding: 40px 24px;
+    max-width: 900px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+  h1 { font-size: 24px; font-weight: 600; margin-bottom: 6px; }
+  .subtitle { color: #666; font-size: 14px; margin-bottom: 40px; }
+  h2 { font-size: 18px; font-weight: 600; margin: 36px 0 16px; }
+  h3 { font-size: 15px; font-weight: 600; margin: 24px 0 10px; color: #333; }
+  p { margin-bottom: 14px; font-size: 15px; }
+  ul { margin: 8px 0 14px 20px; font-size: 14px; }
+  li { margin-bottom: 6px; }
+
+  .section {
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 10px;
+    padding: 24px;
+    margin-bottom: 24px;
+  }
+  .section-num {
+    display: inline-block;
+    background: #1a1a1a;
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 10px;
+    margin-bottom: 12px;
+  }
+  code {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    background: #f0f0f0;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 13px;
+  }
+  .code-block {
+    background: #1a1a1a;
+    color: #e0e0e0;
+    padding: 16px 20px;
+    border-radius: 8px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    overflow-x: auto;
+    margin: 12px 0;
+    white-space: pre;
+  }
+  .code-block .c { color: #6a9955; }
+  .code-block .k { color: #569cd6; }
+  .code-block .n { color: #b5cea8; }
+  .code-block .s { color: #ce9178; }
+  .code-block .hl { background: #264f78; padding: 1px 4px; border-radius: 3px; }
+
+  .callout {
+    background: #fffde7;
+    border: 1px solid #fff9c4;
+    border-left: 3px solid #fbc02d;
+    padding: 14px 16px;
+    border-radius: 0 8px 8px 0;
+    margin: 16px 0;
+    font-size: 14px;
+  }
+  .callout-title {
+    font-weight: 600; margin-bottom: 4px; font-size: 13px;
+    text-transform: uppercase; letter-spacing: 0.5px; color: #f57f17;
+  }
+  .insight {
+    background: #e8eaf6;
+    border: 1px solid #c5cae9;
+    border-left: 3px solid #3f51b5;
+    padding: 14px 16px;
+    border-radius: 0 8px 8px 0;
+    margin: 16px 0;
+    font-size: 14px;
+  }
+  .insight-title {
+    font-weight: 600; margin-bottom: 4px; font-size: 13px;
+    text-transform: uppercase; letter-spacing: 0.5px; color: #283593;
+  }
+  .tanso {
+    background: #e0f2f1;
+    border: 1px solid #b2dfdb;
+    border-left: 3px solid #009688;
+    padding: 14px 16px;
+    border-radius: 0 8px 8px 0;
+    margin: 16px 0;
+    font-size: 14px;
+  }
+  .tanso-title {
+    font-weight: 600; margin-bottom: 4px; font-size: 13px;
+    text-transform: uppercase; letter-spacing: 0.5px; color: #00695c;
+  }
+
+  /* Tower diagram */
+  .tower {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    margin: 20px auto;
+    max-width: 500px;
+  }
+  .tower-block {
+    width: 100%;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    text-align: center;
+    position: relative;
+  }
+  .tower-label {
+    font-weight: 600;
+    font-size: 14px;
+  }
+  .tower-detail {
+    font-size: 12px;
+    color: rgba(0,0,0,0.5);
+    margin-top: 2px;
+  }
+  .tower-arrow {
+    font-size: 16px;
+    color: #999;
+  }
+  .t-embed { background: #e8f5e9; border: 1px solid #a5d6a7; }
+  .t-block { background: #e3f2fd; border: 1px solid #90caf9; }
+  .t-head { background: #fff3e0; border: 1px solid #ffcc80; }
+  .t-input { background: #f5f5f5; border: 1px solid #e0e0e0; }
+  .t-output { background: #fce4ec; border: 1px solid #ef9a9a; }
+  .t-norm { background: #f3e5f5; border: 1px solid #ce93d8; }
+  .t-repeat {
+    border: 2px dashed #90caf9;
+    padding: 8px;
+    border-radius: 12px;
+    margin: 4px 0;
+    width: 100%;
+  }
+  .t-repeat-label {
+    font-size: 11px;
+    color: #1565c0;
+    font-weight: 600;
+    text-align: right;
+    margin-bottom: 4px;
+  }
+
+  /* Shape tracker */
+  .shape-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 12px;
+    margin: 4px 0;
+    border-radius: 6px;
+    font-size: 13px;
+  }
+  .shape-row:nth-child(odd) { background: #fafafa; }
+  .shape-stage {
+    min-width: 160px;
+    font-weight: 500;
+  }
+  .shape-dims {
+    font-family: 'SF Mono', monospace;
+    font-size: 12px;
+    color: #1565c0;
+    background: #e3f2fd;
+    padding: 2px 8px;
+    border-radius: 4px;
+    min-width: 180px;
+  }
+  .shape-note {
+    color: #666;
+    font-size: 12px;
+  }
+
+  /* Attention diagram */
+  .attn-flow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin: 16px 0;
+    flex-wrap: wrap;
+  }
+  .attn-box {
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    text-align: center;
+    font-weight: 500;
+  }
+  .attn-q { background: #e3f2fd; border: 1px solid #90caf9; }
+  .attn-k { background: #e8f5e9; border: 1px solid #a5d6a7; }
+  .attn-v { background: #fff3e0; border: 1px solid #ffcc80; }
+  .attn-op { background: #f5f5f5; border: 1px solid #e0e0e0; font-size: 12px; }
+  .attn-out { background: #fce4ec; border: 1px solid #ef9a9a; }
+  .attn-arrow { color: #999; font-size: 18px; }
+
+  /* Config table */
+  .config-grid {
+    display: grid;
+    grid-template-columns: auto auto 1fr;
+    gap: 6px 16px;
+    margin: 12px 0;
+    font-size: 14px;
+  }
+  .cfg-name { font-family: 'SF Mono', monospace; font-size: 13px; color: #1565c0; }
+  .cfg-val { font-family: 'SF Mono', monospace; font-size: 13px; font-weight: 600; }
+  .cfg-desc { color: #666; }
+
+  /* MLP diagram */
+  .mlp-flow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin: 16px 0;
+    flex-wrap: wrap;
+  }
+  .mlp-box {
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    text-align: center;
+  }
+  .mlp-in { background: #e3f2fd; border: 1px solid #90caf9; }
+  .mlp-mid { background: #fff3e0; border: 1px solid #ffcc80; }
+  .mlp-act { background: #fce4ec; border: 1px solid #ef9a9a; }
+  .mlp-out { background: #e8f5e9; border: 1px solid #a5d6a7; }
+  .mlp-arrow { color: #999; font-size: 18px; }
+
+  .dim-tag {
+    display: inline-block;
+    font-family: 'SF Mono', monospace;
+    font-size: 11px;
+    padding: 1px 6px;
+    border-radius: 3px;
+    background: #f0f0f0;
+    color: #666;
+    margin-top: 4px;
+  }
+</style>
+</head>
+<body>
+
+<h1>Lesson 3: Inside the Model</h1>
+<p class="subtitle">What happens between "tokens go in" and "predictions come out" &mdash; the architecture of <code>train.py</code></p>
+
+<!-- ============================================ -->
+<div class="section">
+  <span class="section-num">THE CONFIG</span>
+  <h2>Model Dimensions</h2>
+  <p>Before anything else: the model's shape is defined by a handful of numbers. Everything else derives from these.</p>
+
+  <div class="config-grid">
+    <span class="cfg-name">DEPTH</span>
+    <span class="cfg-val">8</span>
+    <span class="cfg-desc">Number of transformer blocks stacked on top of each other</span>
+
+    <span class="cfg-name">ASPECT_RATIO</span>
+    <span class="cfg-val">64</span>
+    <span class="cfg-desc">Controls width: model_dim = depth &times; 64 = 512</span>
+
+    <span class="cfg-name">n_embd</span>
+    <span class="cfg-val">512</span>
+    <span class="cfg-desc">The "width" of the model: every token is a vector of 512 numbers</span>
+
+    <span class="cfg-name">n_head</span>
+    <span class="cfg-val">4</span>
+    <span class="cfg-desc">Number of attention heads (parallel attention computations)</span>
+
+    <span class="cfg-name">HEAD_DIM</span>
+    <span class="cfg-val">128</span>
+    <span class="cfg-desc">Dimension per head. n_head = n_embd / HEAD_DIM</span>
+
+    <span class="cfg-name">vocab_size</span>
+    <span class="cfg-val">8,192</span>
+    <span class="cfg-desc">Number of possible tokens (from prepare.py)</span>
+
+    <span class="cfg-name">sequence_len</span>
+    <span class="cfg-val">2,048</span>
+    <span class="cfg-desc">Context window (from prepare.py)</span>
+  </div>
+
+  <div class="callout">
+    <div class="callout-title">Depth vs width</div>
+    The model has two axes: <strong>depth</strong> (how many layers) and <strong>width</strong> (how big each layer is). The ASPECT_RATIO ties them together: wider models need more layers to be effective, so width scales with depth. This is one of the key knobs the AI researcher can turn in experiments.
+  </div>
+</div>
+
+<!-- ============================================ -->
+<div class="section">
+  <span class="section-num">PART 1</span>
+  <h2>The Tower: Full Architecture</h2>
+  <p>The model is a vertical stack. Data enters at the bottom and exits at the top. Here's the complete picture:</p>
+
+  <div class="tower">
+    <div class="tower-block t-output">
+      <div class="tower-label">Softcap + Loss</div>
+      <div class="tower-detail">Cap extreme values, compute cross-entropy against targets</div>
+    </div>
+    <div class="tower-arrow">&uarr;</div>
+    <div class="tower-block t-head">
+      <div class="tower-label">lm_head</div>
+      <div class="tower-detail">Linear projection: 512 &rarr; 8,192 (one score per vocabulary token)</div>
+    </div>
+    <div class="tower-arrow">&uarr;</div>
+    <div class="tower-block t-norm">
+      <div class="tower-label">RMS Norm</div>
+      <div class="tower-detail">Normalize before final projection</div>
+    </div>
+    <div class="tower-arrow">&uarr;</div>
+
+    <div class="t-repeat">
+      <div class="t-repeat-label">&times; 8 blocks</div>
+      <div class="tower" style="margin: 0;">
+        <div class="tower-block t-block">
+          <div class="tower-label">MLP</div>
+          <div class="tower-detail">Feed-forward: expand to 2048, activate, compress back to 512</div>
+        </div>
+        <div class="tower-arrow">&uarr;</div>
+        <div class="tower-block t-block" style="background: #bbdefb;">
+          <div class="tower-label">Attention</div>
+          <div class="tower-detail">Each token looks at previous tokens to gather context</div>
+        </div>
+        <div class="tower-arrow">&uarr;</div>
+        <div class="tower-block" style="background: #f5f5f5; border: 1px solid #e0e0e0;">
+          <div class="tower-label" style="font-size: 12px;">&lambda;<sub>resid</sub> &middot; x + &lambda;<sub>x0</sub> &middot; x<sub>0</sub></div>
+          <div class="tower-detail">Mix current representation with original embedding</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tower-arrow">&uarr;</div>
+    <div class="tower-block t-norm">
+      <div class="tower-label">RMS Norm</div>
+      <div class="tower-detail">Normalize embeddings before entering blocks</div>
+    </div>
+    <div class="tower-arrow">&uarr;</div>
+    <div class="tower-block t-embed">
+      <div class="tower-label">Token Embedding (wte)</div>
+      <div class="tower-detail">Look up each token ID &rarr; vector of 512 numbers</div>
+    </div>
+    <div class="tower-arrow">&uarr;</div>
+    <div class="tower-block t-input">
+      <div class="tower-label">Input Token IDs</div>
+      <div class="tower-detail">[128 &times; 2,048] integers from the dataloader</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<div class="section">
+  <span class="section-num">PART 2</span>
+  <h2>Token Embedding: IDs &rarr; Vectors</h2>
+
+  <p>The first step is the most important conceptual leap: <strong>every token becomes a point in 512-dimensional space</strong>.</p>
+
+  <p>The embedding layer (<code>wte</code>) is just a lookup table. It has 8,192 rows (one per vocabulary token) and 512 columns. When you feed in token ID 2401 ("Hell"), it returns row 2401: a vector of 512 numbers.</p>
+
+  <div class="code-block"><span class="c"># The embedding is literally a giant table</span>
+wte = nn.Embedding(<span class="n">8192</span>, <span class="n">512</span>)  <span class="c"># shape: [8192, 512]</span>
+
+<span class="c"># Feed in token IDs, get vectors</span>
+x = wte(idx)  <span class="c"># [128, 2048] &rarr; [128, 2048, 512]</span></div>
+
+  <p>At first, these 512 numbers are random. They don't mean anything. But during training, the model learns to arrange them so that tokens with similar meanings end up near each other in this 512-dimensional space. "cat" and "dog" drift closer together. "cat" and "invoice" drift apart.</p>
+
+  <div class="insight">
+    <div class="insight-title">Why 512 dimensions?</div>
+    Think of it as the model's "vocabulary for describing tokens." Two dimensions could capture simple things (positive/negative, concrete/abstract). But language is complex: you need dimensions for grammar, topic, sentiment, formality, position in a sentence, and thousands of other features. 512 gives the model enough room to encode rich meaning. This is the "width" of the model, and making it bigger lets the model capture more nuance, at the cost of more computation.
+  </div>
+</div>
+
+<!-- ============================================ -->
+<div class="section">
+  <span class="section-num">PART 3</span>
+  <h2>Attention: "What Should I Pay Attention To?"</h2>
+
+  <p>This is the core mechanism that makes transformers work. At every position in the sequence, the model asks: <strong>"Which previous tokens are relevant to predicting what comes next here?"</strong></p>
+
+  <h3>The three projections: Q, K, V</h3>
+  <p>Each token's 512-dim vector gets transformed into three different roles:</p>
+
+  <div class="attn-flow">
+    <div class="attn-box attn-q">
+      <strong>Q</strong>uery<br>
+      <span style="font-size: 11px;">"What am I looking for?"</span>
+    </div>
+    <div class="attn-box attn-k">
+      <strong>K</strong>ey<br>
+      <span style="font-size: 11px;">"What do I contain?"</span>
+    </div>
+    <div class="attn-box attn-v">
+      <strong>V</strong>alue<br>
+      <span style="font-size: 11px;">"What do I offer?"</span>
+    </div>
+  </div>
+
+  <p>The process:</p>
+  <ol style="margin: 8px 0 14px 20px; font-size: 14px;">
+    <li><strong>Compute scores:</strong> Each token's Query is compared against every previous token's Key. High score = "that token is relevant to me."</li>
+    <li><strong>Normalize:</strong> Scores get turned into percentages (they sum to 1). This is the "attention pattern."</li>
+    <li><strong>Gather information:</strong> Each token collects a weighted mix of previous tokens' Values, weighted by those attention scores.</li>
+    <li><strong>Project out:</strong> The gathered information gets projected back to 512 dimensions via <code>c_proj</code>.</li>
+  </ol>
+
+  <div class="attn-flow">
+    <div class="attn-box attn-q">Q</div>
+    <div class="attn-arrow">&times;</div>
+    <div class="attn-box attn-k">K<sup>T</sup></div>
+    <div class="attn-arrow">&rarr;</div>
+    <div class="attn-box attn-op">scores &rarr; softmax</div>
+    <div class="attn-arrow">&times;</div>
+    <div class="attn-box attn-v">V</div>
+    <div class="attn-arrow">&rarr;</div>
+    <div class="attn-box attn-out">Output</div>
+  </div>
+
+  <h3>Multi-head: Parallel attention</h3>
+  <p>The model doesn't run attention once. It runs it <strong>4 times in parallel</strong> (n_head = 4), each with its own Q, K, V projections. Each head can learn to pay attention to different things: one head might focus on grammar, another on topic, another on recent context.</p>
+
+  <p>The 512-dim vector gets split into 4 heads of 128 dimensions each. Each head runs attention independently, then they get concatenated back to 512 and projected through <code>c_proj</code>.</p>
+
+  <div class="code-block"><span class="c"># train.py lines 79-81: splitting into heads</span>
+q = self.c_q(x).view(B, T, <span class="n">4</span>, <span class="n">128</span>)  <span class="c"># 4 heads, 128 dim each</span>
+k = self.c_k(x).view(B, T, <span class="n">4</span>, <span class="n">128</span>)
+v = self.c_v(x).view(B, T, <span class="n">4</span>, <span class="n">128</span>)</div>
+
+  <h3>Causal masking: No peeking</h3>
+  <p>Critical constraint: <strong>a token can only attend to tokens that came before it</strong>, never tokens after it. This is what makes it "causal" attention. If position 5 could see position 6, the model would be cheating: it would already know the answer it's supposed to predict.</p>
+
+  <p>This is enforced by Flash Attention 3 (<code>fa3</code>), which handles the masking internally via <code>causal=True</code>.</p>
+
+  <h3>Sliding window: A cost optimization</h3>
+  <p>Full attention means every token looks at ALL previous tokens. With 2,048 tokens, that's expensive. The <code>window_pattern = "SSSL"</code> means:</p>
+  <ul>
+    <li><strong>S</strong> (Short) layers: each token only looks back 1,024 positions</li>
+    <li><strong>L</strong> (Long) layers: full 2,048 context</li>
+    <li>Pattern repeats: layers 0,1,2 are Short, layer 3 is Long, layers 4,5,6 are Short, layer 7 (last) is always Long</li>
+  </ul>
+  <p>Most layers do "local" attention (nearby context), and periodically one layer does the expensive "global" attention (full context). The last layer always sees everything.</p>
+
+</div>
+
+<!-- ============================================ -->
+<div class="section">
+  <span class="section-num">PART 4</span>
+  <h2>Rotary Embeddings: "Where Am I?"</h2>
+
+  <p>Attention compares tokens, but it doesn't inherently know <strong>where</strong> they are. Without position information, "the cat sat on the mat" and "mat the on sat cat the" would look identical to attention.</p>
+
+  <p>Rotary Position Embeddings (RoPE) solve this by <strong>rotating</strong> the Q and K vectors based on their position. Token at position 0 gets rotated 0 degrees. Token at position 100 gets rotated 100&times; the base frequency. When Q and K are compared, the rotation difference encodes the distance between them.</p>
+
+  <div class="code-block"><span class="c"># train.py lines 90: applied to Q and K before attention</span>
+q, k = apply_rotary_emb(q, cos, sin), apply_rotary_emb(k, cos, sin)</div>
+
+  <p>The intuition: two tokens close together have similar rotations, so their dot product (the attention score) is naturally higher. Tokens far apart have very different rotations, making it harder to attend strongly. This gives the model a smooth, continuous sense of "how far apart are these two tokens?"</p>
+</div>
+
+<!-- ============================================ -->
+<div class="section">
+  <span class="section-num">PART 5</span>
+  <h2>The MLP: "What Does This Mean?"</h2>
+
+  <p>After attention gathers context from other tokens, the MLP processes each token individually. If attention is "what should I pay attention to?", the MLP is "given what I've gathered, what should I understand?"</p>
+
+  <div class="mlp-flow">
+    <div class="mlp-box mlp-in">
+      Input<br><span class="dim-tag">512</span>
+    </div>
+    <div class="mlp-arrow">&rarr;</div>
+    <div class="mlp-box mlp-mid">
+      c_fc (expand)<br><span class="dim-tag">512 &rarr; 2,048</span>
+    </div>
+    <div class="mlp-arrow">&rarr;</div>
+    <div class="mlp-box mlp-act">
+      ReLU&sup2;<br><span class="dim-tag">activation</span>
+    </div>
+    <div class="mlp-arrow">&rarr;</div>
+    <div class="mlp-box mlp-out">
+      c_proj (compress)<br><span class="dim-tag">2,048 &rarr; 512</span>
+    </div>
+  </div>
+
+  <p>Three steps:</p>
+  <ol style="margin: 8px 0 14px 20px; font-size: 14px;">
+    <li><strong>Expand</strong> from 512 to 2,048 dimensions (4&times; wider). This gives the model a bigger workspace to think in.</li>
+    <li><strong>Activate</strong> with ReLU-squared: zero out negative values, then square the positives. This introduces non-linearity (without this, stacking layers would be pointless, because multiple linear transforms collapse into one).</li>
+    <li><strong>Compress</strong> back to 512 dimensions, keeping only what matters.</li>
+  </ol>
+
+  <div class="code-block"><span class="c"># train.py lines 102-108</span>
+<span class="k">def</span> forward(self, x):
+    x = self.c_fc(x)          <span class="c"># [B, T, 512] &rarr; [B, T, 2048]</span>
+    x = F.relu(x).square()    <span class="c"># zero negatives, square positives</span>
+    x = self.c_proj(x)        <span class="c"># [B, T, 2048] &rarr; [B, T, 512]</span>
+    <span class="k">return</span> x</div>
+
+  <div class="callout">
+    <div class="callout-title">Why expand then compress?</div>
+    Think of it as the model temporarily thinking in a higher-dimensional space to do complex pattern matching, then summarizing the result back into the standard size. The MLP is where the model stores "facts" and "rules" it has learned. Research shows that individual neurons in the expanded layer often correspond to recognizable concepts.
+  </div>
+</div>
+
+<!-- ============================================ -->
+<div class="section">
+  <span class="section-num">PART 6</span>
+  <h2>The Block: Attention + MLP Together</h2>
+
+  <p>Each of the 8 layers is a "Block" that combines attention and MLP, with an important pattern: <strong>residual connections</strong>.</p>
+
+  <div class="code-block"><span class="c"># train.py lines 118-121: one block</span>
+<span class="k">def</span> forward(self, x, ve, cos_sin, window_size):
+    x = x + self.attn(norm(x), ve, cos_sin, window_size)  <span class="c"># attend + add back</span>
+    x = x + self.mlp(norm(x))                              <span class="c"># process + add back</span>
+    <span class="k">return</span> x</div>
+
+  <p>Notice the <code>x = x + ...</code> pattern. The output of attention gets <strong>added to</strong> the input, not replacing it. Same for MLP. This is a residual connection: the original signal always passes through, and each layer just adds a small correction.</p>
+
+  <p>Without residuals, information from early layers would degrade as it passes through 8 layers. With residuals, early information flows directly to the top. Each layer only needs to learn "what should I add or adjust?", not "reproduce everything and also add my bit."</p>
+
+  <h3>The lambda trick: mixing in the original</h3>
+  <p>This model goes further. Before each block, it mixes the current representation with the original embedding:</p>
+
+  <div class="code-block"><span class="c"># train.py lines 276-277: inside the forward pass</span>
+x = self.resid_lambdas[i] * x + self.x0_lambdas[i] * x0</div>
+
+  <p><code>resid_lambdas</code> starts at 1.0 and <code>x0_lambdas</code> starts at 0.1. So at the beginning, each layer mostly uses its current state (1.0 &times; x) with a small contribution from the original embedding (0.1 &times; x0). These values are <strong>learnable</strong>: the model figures out the right mix during training.</p>
+</div>
+
+<!-- ============================================ -->
+<div class="section">
+  <span class="section-num">PART 7</span>
+  <h2>Value Embeddings: A Second Memory</h2>
+
+  <p>This is a feature from a recent paper called ResFormer, and it's one of the more unusual parts of this architecture.</p>
+
+  <p>Normal attention: the Value (V) is computed from the current token's representation, which has been transformed by all previous layers. Value embeddings add a second source: a <strong>direct lookup from the original token IDs</strong>, bypassing all intermediate layers.</p>
+
+  <div class="code-block"><span class="c"># Alternating layers get value embeddings (0, 2, 4, 6 or 1, 3, 5, 7)</span>
+<span class="c"># train.py lines 84-87</span>
+<span class="k">if</span> ve <span class="k">is not</span> None:
+    ve = ve.view(B, T, n_kv_head, head_dim)
+    gate = <span class="n">2</span> * torch.sigmoid(self.ve_gate(x[..., :32]))
+    v = v + gate * ve  <span class="c"># mix in the direct embedding</span></div>
+
+  <p>The gate is input-dependent: the model looks at the first 32 channels of the current representation and decides <strong>how much</strong> of the value embedding to mix in. Initialized so the gate output is 1.0 (neutral), meaning the model starts by including them equally and learns to adjust.</p>
+
+  <div class="insight">
+    <div class="insight-title">Why does this help?</div>
+    In deep networks, information from the original tokens gets increasingly "processed" as it moves through layers. Sometimes the later layers need to recall the raw identity of a token, but that signal has been diluted. Value embeddings provide a shortcut: direct access to "what token was actually here?" without going through the full transformation chain.
+  </div>
+</div>
+
+<!-- ============================================ -->
+<div class="section">
+  <span class="section-num">PART 8</span>
+  <h2>The Output Head: Vectors &rarr; Predictions</h2>
+
+  <p>After 8 blocks, each token position holds a 512-dim vector that encodes everything the model "thinks" about what comes next. The final step converts this back to a prediction over the vocabulary.</p>
+
+  <div class="code-block"><span class="c"># train.py lines 281-291</span>
+x = norm(x)                        <span class="c"># normalize one last time</span>
+
+softcap = <span class="n">15</span>
+logits = self.lm_head(x)           <span class="c"># [B, T, 512] &rarr; [B, T, 8192]</span>
+logits = logits.float()            <span class="c"># full precision for stability</span>
+logits = softcap * tanh(logits / softcap)  <span class="c"># cap extreme values</span>
+
+<span class="k">if</span> targets <span class="k">is not</span> None:
+    loss = cross_entropy(logits, targets)  <span class="c"># how wrong were we?</span></div>
+
+  <p><code>lm_head</code> is a linear projection from 512 to 8,192: for each position, it produces one score per token in the vocabulary. Higher score = model thinks that token is more likely to come next.</p>
+
+  <p>The <strong>softcap</strong> (tanh capping at &plusmn;15) prevents any single prediction from being too extreme. Without it, the model might become overconfident in wrong answers, which destabilizes training.</p>
+
+  <p>Finally, <strong>cross-entropy loss</strong> compares the model's prediction distribution against the actual next token. This single number is what flows backward through the entire model to update all the weights.</p>
+</div>
+
+<!-- ============================================ -->
+<div class="section">
+  <span class="section-num">PART 9</span>
+  <h2>Shape Tracker: Following the Data</h2>
+  <p>Here's every shape transformation from input to output, so you can see exactly how the dimensions change:</p>
+
+  <div class="shape-row">
+    <div class="shape-stage">Input token IDs</div>
+    <div class="shape-dims">[128, 2048]</div>
+    <div class="shape-note">Integers 0-8191</div>
+  </div>
+  <div class="shape-row">
+    <div class="shape-stage">After embedding</div>
+    <div class="shape-dims">[128, 2048, 512]</div>
+    <div class="shape-note">Each int &rarr; 512-dim vector</div>
+  </div>
+  <div class="shape-row">
+    <div class="shape-stage">After norm</div>
+    <div class="shape-dims">[128, 2048, 512]</div>
+    <div class="shape-note">Same shape, normalized values</div>
+  </div>
+  <div class="shape-row">
+    <div class="shape-stage">Q, K, V (in attention)</div>
+    <div class="shape-dims">[128, 2048, 4, 128]</div>
+    <div class="shape-note">Split into 4 heads of 128</div>
+  </div>
+  <div class="shape-row">
+    <div class="shape-stage">After attention</div>
+    <div class="shape-dims">[128, 2048, 512]</div>
+    <div class="shape-note">Heads concatenated, projected</div>
+  </div>
+  <div class="shape-row">
+    <div class="shape-stage">MLP expanded</div>
+    <div class="shape-dims">[128, 2048, 2048]</div>
+    <div class="shape-note">4&times; wider for processing</div>
+  </div>
+  <div class="shape-row">
+    <div class="shape-stage">MLP compressed</div>
+    <div class="shape-dims">[128, 2048, 512]</div>
+    <div class="shape-note">Back to model width</div>
+  </div>
+  <div class="shape-row">
+    <div class="shape-stage" style="color: #999;">&hellip; repeat 8&times; &hellip;</div>
+    <div class="shape-dims" style="background: none;"></div>
+    <div class="shape-note"></div>
+  </div>
+  <div class="shape-row">
+    <div class="shape-stage">Logits (lm_head)</div>
+    <div class="shape-dims">[128, 2048, 8192]</div>
+    <div class="shape-note">One score per vocab token</div>
+  </div>
+  <div class="shape-row">
+    <div class="shape-stage">Loss</div>
+    <div class="shape-dims">[1]</div>
+    <div class="shape-note">Single number: how wrong</div>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<div class="section">
+  <span class="section-num">COUNTING PARAMETERS</span>
+  <h2>Where the 50M Parameters Live</h2>
+  <p>Every number the model learns is a "parameter." Here's where they are:</p>
+
+  <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+    <tr style="background: #f5f5f5;">
+      <td style="padding: 8px; font-weight: 600; border-bottom: 1px solid #e0e0e0;">Component</td>
+      <td style="padding: 8px; font-weight: 600; border-bottom: 1px solid #e0e0e0;">What it does</td>
+      <td style="padding: 8px; font-weight: 600; border-bottom: 1px solid #e0e0e0; text-align: right;">Params</td>
+    </tr>
+    <tr>
+      <td style="padding: 8px; border-bottom: 1px solid #f0f0f0;"><code>wte</code></td>
+      <td style="padding: 8px; border-bottom: 1px solid #f0f0f0;">Token embedding table</td>
+      <td style="padding: 8px; border-bottom: 1px solid #f0f0f0; text-align: right; font-family: monospace;">4.2M</td>
+    </tr>
+    <tr>
+      <td style="padding: 8px; border-bottom: 1px solid #f0f0f0;"><code>value_embeds</code></td>
+      <td style="padding: 8px; border-bottom: 1px solid #f0f0f0;">Value embedding tables (4 layers)</td>
+      <td style="padding: 8px; border-bottom: 1px solid #f0f0f0; text-align: right; font-family: monospace;">~16.8M</td>
+    </tr>
+    <tr>
+      <td style="padding: 8px; border-bottom: 1px solid #f0f0f0;"><code>lm_head</code></td>
+      <td style="padding: 8px; border-bottom: 1px solid #f0f0f0;">Output projection</td>
+      <td style="padding: 8px; border-bottom: 1px solid #f0f0f0; text-align: right; font-family: monospace;">4.2M</td>
+    </tr>
+    <tr>
+      <td style="padding: 8px; border-bottom: 1px solid #f0f0f0;">Transformer blocks</td>
+      <td style="padding: 8px; border-bottom: 1px solid #f0f0f0;">Attention + MLP &times; 8 layers</td>
+      <td style="padding: 8px; border-bottom: 1px solid #f0f0f0; text-align: right; font-family: monospace;">~25M</td>
+    </tr>
+    <tr>
+      <td style="padding: 8px; border-bottom: 1px solid #f0f0f0;">Scalars</td>
+      <td style="padding: 8px; border-bottom: 1px solid #f0f0f0;">Lambda weights (16 total)</td>
+      <td style="padding: 8px; border-bottom: 1px solid #f0f0f0; text-align: right; font-family: monospace;">16</td>
+    </tr>
+    <tr style="font-weight: 600;">
+      <td style="padding: 8px;" colspan="2">Total</td>
+      <td style="padding: 8px; text-align: right; font-family: monospace;">~50M</td>
+    </tr>
+  </table>
+
+  <p style="margin-top: 12px;">Notice that the embedding tables (wte + value_embeds + lm_head) account for roughly half the parameters. This is characteristic of small models with small vocabularies. As models get larger, the transformer blocks dominate.</p>
+</div>
+
+<!-- ============================================ -->
+<div class="section" style="background: #f0f4ff; border-color: #c5cae9;">
+  <span class="section-num" style="background: #3f51b5;">NEXT UP</span>
+  <h2>Lesson 4: The Training Loop</h2>
+  <p>Now you know the data pipeline (Lesson 2) and the model architecture (Lesson 3). The next piece: how does the model actually <strong>learn</strong>? That's the training loop: forward pass, loss, backward pass, optimizer step, and the learning rate schedules that control it all.</p>
+  <p>That's also where the two optimizers come in: <strong>AdamW</strong> for embeddings and scalars, <strong>Muon</strong> for the matrix parameters. They're different strategies for the same goal: nudge the parameters in the direction that reduces loss.</p>
+</div>
+
+</body>
+</html>

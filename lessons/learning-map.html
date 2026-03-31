@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Autoresearch Learning Map</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #f8f9fa;
+    color: #1a1a1a;
+    padding: 40px 24px;
+    max-width: 960px;
+    margin: 0 auto;
+    line-height: 1.5;
+  }
+  h1 {
+    font-size: 24px;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+  .subtitle {
+    color: #666;
+    font-size: 14px;
+    margin-bottom: 40px;
+  }
+  .file-group {
+    margin-bottom: 36px;
+  }
+  .file-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .file-name {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 16px;
+    font-weight: 600;
+  }
+  .file-role {
+    font-size: 13px;
+    color: #666;
+  }
+  .file-status {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 500;
+  }
+  .status-complete {
+    background: #e6f4ea;
+    color: #1e7e34;
+  }
+  .status-in-progress {
+    background: #fff3e0;
+    color: #e65100;
+  }
+  .status-not-started {
+    background: #f0f0f0;
+    color: #999;
+  }
+  .concepts {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .concept {
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 16px;
+    transition: all 0.2s;
+  }
+  .concept.learned {
+    border-left: 3px solid #1e7e34;
+  }
+  .concept.current {
+    border-left: 3px solid #e65100;
+    background: #fffbf5;
+  }
+  .concept.upcoming {
+    opacity: 0.4;
+    border-left: 3px solid #ccc;
+  }
+  .concept-title {
+    font-weight: 600;
+    font-size: 14px;
+    margin-bottom: 4px;
+  }
+  .concept.upcoming .concept-title {
+    color: #999;
+  }
+  .concept-desc {
+    font-size: 13px;
+    color: #555;
+  }
+  .concept.upcoming .concept-desc {
+    color: #bbb;
+  }
+  .concept-tag {
+    display: inline-block;
+    font-size: 11px;
+    padding: 1px 6px;
+    border-radius: 4px;
+    margin-top: 8px;
+    font-weight: 500;
+  }
+  .tag-learned {
+    background: #e6f4ea;
+    color: #1e7e34;
+  }
+  .tag-current {
+    background: #fff3e0;
+    color: #e65100;
+  }
+  .tag-upcoming {
+    background: #f0f0f0;
+    color: #bbb;
+  }
+  .divider {
+    border: none;
+    border-top: 1px solid #e8e8e8;
+    margin: 36px 0;
+  }
+  .connections {
+    margin-top: 40px;
+  }
+  .connections h2 {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 16px;
+  }
+  .connection {
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+  .connection.upcoming {
+    opacity: 0.4;
+  }
+  .connection-title {
+    font-weight: 600;
+    font-size: 14px;
+    margin-bottom: 4px;
+  }
+  .connection-desc {
+    font-size: 13px;
+    color: #555;
+  }
+  .wide {
+    grid-column: 1 / -1;
+  }
+  .progress-bar {
+    width: 100%;
+    height: 4px;
+    background: #e8e8e8;
+    border-radius: 2px;
+    margin-bottom: 32px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: #1e7e34;
+    border-radius: 2px;
+    width: 100%;
+  }
+</style>
+</head>
+<body>
+
+<h1>Autoresearch Learning Map</h1>
+<p class="subtitle">Tracking what we've covered, where we are, and what's ahead.</p>
+<div class="progress-bar"><div class="progress-fill"></div></div>
+
+<!-- prepare.py -->
+<div class="file-group">
+  <div class="file-header">
+    <span class="file-name">prepare.py</span>
+    <span class="file-role">The Lab Equipment</span>
+    <span class="file-status status-complete">Complete</span>
+  </div>
+  <div class="concepts">
+    <div class="concept learned">
+      <div class="concept-title">Training Data</div>
+      <div class="concept-desc">Text downloaded from the internet, stored as .parquet files. One shard set aside for validation (the honest test).</div>
+      <span class="concept-tag tag-learned">Learned</span>
+    </div>
+    <div class="concept learned">
+      <div class="concept-title">Tokenizer</div>
+      <div class="concept-desc">Converts text to numbers and back. Uses BPE to find common patterns. Vocabulary size is a choice with trade-offs: big vocabulary = fewer tokens but bigger embedding table. Small vocabulary = more tokens but simpler model.</div>
+      <span class="concept-tag tag-learned">Learned</span>
+    </div>
+    <div class="concept learned">
+      <div class="concept-title">Bytes vs Tokens</div>
+      <div class="concept-desc">Bytes are fixed (1 English letter = 1 byte). Tokens depend on the tokenizer. Same text can be different numbers of tokens but is always the same number of bytes.</div>
+      <span class="concept-tag tag-learned">Learned</span>
+    </div>
+    <div class="concept learned">
+      <div class="concept-title">Bits Per Byte (val_bpb)</div>
+      <div class="concept-desc">The scoring metric. Measures how well the model predicts text, normalized by bytes so vocabulary size changes don't break comparisons. Lower is better.</div>
+      <span class="concept-tag tag-learned">Learned</span>
+    </div>
+    <div class="concept learned">
+      <div class="concept-title">Fixed Constants</div>
+      <div class="concept-desc">MAX_SEQ_LEN = 2048 tokens context, TIME_BUDGET = 300 seconds, EVAL_TOKENS = ~20M tokens for testing. These never change. They make experiments comparable.</div>
+      <span class="concept-tag tag-learned">Learned</span>
+    </div>
+    <div class="concept learned">
+      <div class="concept-title">Evaluation Function</div>
+      <div class="concept-desc">evaluate_bpb() is the judge. Feeds unseen text to the model, scores surprisal, converts to bits per byte. The ground truth metric no one can modify.</div>
+      <span class="concept-tag tag-learned">Learned</span>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- train.py -->
+<div class="file-group">
+  <div class="file-header">
+    <span class="file-name">train.py</span>
+    <span class="file-role">The Experiment</span>
+    <span class="file-status status-complete">Complete</span>
+  </div>
+  <div class="concepts">
+    <div class="concept learned">
+      <div class="concept-title">Model Configuration (GPTConfig)</div>
+      <div class="concept-desc">The blueprint: sequence_len, vocab_size, n_layer (depth), n_head (attention heads), n_embd (width), window_pattern. These define the model's shape and capacity.</div>
+      <span class="concept-tag tag-learned">Learned</span>
+    </div>
+    <div class="concept learned">
+      <div class="concept-title">Trade-offs</div>
+      <div class="concept-desc">Four constraints when changing the model: time (fixed at 5 min), money (fixed by GPU choice), memory (hard wall, crash if exceeded), quality (bigger isn't always better, overfitting is possible).</div>
+      <span class="concept-tag tag-learned">Learned</span>
+    </div>
+    <div class="concept learned">
+      <div class="concept-title">Embeddings</div>
+      <div class="concept-desc">A lookup table that turns each token number into a list of 768 numbers. Random at first, then learned during training so similar words get similar numbers. The lm_head does the reverse at the end: 768 numbers back to a score for each token.</div>
+      <span class="concept-tag tag-learned">Learned</span>
+    </div>
+    <div class="concept learned">
+      <div class="concept-title">Attention</div>
+      <div class="concept-desc">How the model decides which previous tokens matter for predicting the next one. Uses Query/Key/Value: each token asks "what am I looking for?" and scores every previous token on relevance. Multiple heads (6) look for different relationships in parallel. Window pattern (SSSL) limits how far back some layers look to save compute. Causal: can only look backward, never forward.</div>
+      <span class="concept-tag tag-learned">Learned</span>
+    </div>
+    <div class="concept learned">
+      <div class="concept-title">Temperature</div>
+      <div class="concept-desc">Controls how the model picks from its scored predictions. Low temperature: always picks the highest-scored token (precise, repetitive). High temperature: willing to pick lower-scored tokens (creative, less accurate). Same trade-off as likelihood thresholds in data matching.</div>
+      <span class="concept-tag tag-learned">Learned</span>
+    </div>
+    <div class="concept learned">
+      <div class="concept-title">MLP (Feed-Forward Layer)</div>
+      <div class="concept-desc">Three steps after attention: expand (768 to 3,072 numbers), filter (ReLU removes negatives, squaring amplifies what remains), compress (3,072 back to 768). Attention notices who matters. MLP processes what was noticed.</div>
+      <span class="concept-tag tag-learned">Learned</span>
+    </div>
+    <div class="concept learned">
+      <div class="concept-title">The Block (Attention + MLP) and Forward Pass</div>
+      <div class="concept-desc">A Block is attention then MLP with residual connections (output added to input, so nothing is lost, like annotations on a document). Stack 8 Blocks and you get the full model. Full flow: tokens → embed → Block 1-8 → lm_head → prediction. Each layer deepens understanding because every token has been refined by previous layers.</div>
+      <span class="concept-tag tag-learned">Learned</span>
+    </div>
+    <div class="concept learned">
+      <div class="concept-title">The Optimizer (Muon + AdamW)</div>
+      <div class="concept-desc">Adjusts every number in the model to reduce loss. Gradients say which direction. Learning rate says how much. AdamW (cautious, steady) for embeddings. Muon (aggressive, fast) for big matrix weights. Different parts get different learning rates because some are more sensitive. Schedule: ramp up, full speed, then slow down as training ends.</div>
+      <span class="concept-tag tag-learned">Learned</span>
+    </div>
+    <div class="concept learned">
+      <div class="concept-title">Hyperparameters</div>
+      <div class="concept-desc">Two categories: architecture knobs (DEPTH, ASPECT_RATIO, WINDOW_PATTERN) change what the model is. Optimization knobs (learning rates, batch size, warmup/warmdown, weight decay) change how it learns. The most common things the agent experiments with.</div>
+      <span class="concept-tag tag-learned">Learned</span>
+    </div>
+    <div class="concept learned">
+      <div class="concept-title">The Training Loop</div>
+      <div class="concept-desc">Core loop: forward pass (predict and score), backward pass (compute gradients for every number), optimizer step (adjust weights). Gradient accumulation splits large batches into GPU-sized chunks. First 10 steps excluded from timer (compilation overhead). Fast-fail: aborts if loss explodes or becomes NaN. After 5 minutes: evaluate on unseen text, print val_bpb.</div>
+      <span class="concept-tag tag-learned">Learned</span>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- program.md -->
+<div class="file-group">
+  <div class="file-header">
+    <span class="file-name">program.md</span>
+    <span class="file-role">The Research Director</span>
+    <span class="file-status status-complete">Complete</span>
+  </div>
+  <div class="concepts">
+    <div class="concept learned">
+      <div class="concept-title">Setup Protocol</div>
+      <div class="concept-desc">Agent onboarding: create a git branch per session, read all files, verify data, initialize results.tsv. The branch enables clean keep/discard via git reset.</div>
+      <span class="concept-tag tag-learned">Learned</span>
+    </div>
+    <div class="concept learned">
+      <div class="concept-title">Scope and Constraints</div>
+      <div class="concept-desc">Agent can modify train.py (anything). Cannot modify prepare.py, install packages, or change evaluation. Prevents cheating: you can change the model but not the test. Simplicity criterion: don't keep messy improvements.</div>
+      <span class="concept-tag tag-learned">Learned</span>
+    </div>
+    <div class="concept learned">
+      <div class="concept-title">The Experiment Loop</div>
+      <div class="concept-desc">Edit, commit, run, read results, log to TSV, keep or discard. Output redirected to file to protect agent context. Commit before running so every idea is in git history. The output is better code, not a better model (models are thrown away each run).</div>
+      <span class="concept-tag tag-learned">Learned</span>
+    </div>
+    <div class="concept learned">
+      <div class="concept-title">Autonomy Rules and Measurement Integrity</div>
+      <div class="concept-desc">"NEVER STOP" overrides the agent's default instinct to check in. Tonal divergence signals importance. Fixed harness ensures internal consistency (valid keep/discard decisions) and external comparability (findings are transferable to the community).</div>
+      <span class="concept-tag tag-learned">Learned</span>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- Tanso Connections -->
+<div class="connections">
+  <h2>Connections to Tanso</h2>
+  <div class="connection">
+    <div class="connection-title">Training step = Usage event</div>
+    <div class="connection-desc">Each training step processes ~524K tokens at a computable cost. This maps directly to Tanso's event ingestion: a unit of work with cost and usage attached.</div>
+  </div>
+  <div class="connection">
+    <div class="connection-title">Time budget = Entitlement check</div>
+    <div class="connection-desc">The 5-minute hard stop is the same concept as Tanso returning "allowed: false" when a customer hits their usage limit. Both are gates that enforce resource constraints.</div>
+  </div>
+  <div class="connection">
+    <div class="connection-title">Architecture choices = Variable cost to serve</div>
+    <div class="connection-desc">Different model configurations consume different compute for the same token count. This is why two customers on the same plan can have wildly different margins. It's the core problem Tanso solves.</div>
+  </div>
+  <div class="connection">
+    <div class="connection-title">Autoresearch loop = Pricing optimizer</div>
+    <div class="connection-desc">Try, measure, keep or discard. Applied to pricing rules instead of neural network architectures, using Tanso's historical data as the test set.</div>
+  </div>
+  <div class="connection">
+    <div class="connection-title">Optimizer schedule = Billing period lifecycle</div>
+    <div class="connection-desc">Warmup, steady state, warmdown mirrors subscription start (onboarding), active usage, and end-of-period reconciliation. Both follow a structured lifecycle within a fixed window.</div>
+  </div>
+  <div class="connection">
+    <div class="connection-title">Fixed harness = Consistent metric definition</div>
+    <div class="connection-desc">Changing the evaluation mid-session breaks comparability, just like changing how a usage unit is defined mid-month breaks a customer's margin trend. Internal consistency matters within a session; external consistency matters for shared findings.</div>
+  </div>
+  <div class="connection">
+    <div class="connection-title">Parallel attention heads = Multi-agent orchestration</div>
+    <div class="connection-desc">Multiple agents working in parallel with a coordinator that merges their outputs. Same architecture Kat built with multiple Claude terminals and an orchestrator.</div>
+  </div>
+</div>
+
+</body>
+</html>
