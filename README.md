@@ -59,9 +59,11 @@ Real lessons from a PM learning to build, starting from zero:
 | [Model Architecture](lessons/lesson-3-model-architecture.html) | What a neural network actually is, in terms you already know |
 | [Training Loop](lessons/lesson-4-training-loop.html) | How AI learns, and why it matters for your product decisions |
 
+*Lessons are HTML files. Download them and open in your browser to view.*
+
 ### The Blog
 
-- [I Build Billing for AI Companies. So I Decided to Learn How AI Training Works.](blog/blog-draft.md) -- The full story of going from PM to builder.
+- [I Build Billing for AI Companies. So I Decided to Learn How AI Training Works.](blog/blog.md) -- The full story of going from PM to builder.
 
 ## The idea
 
