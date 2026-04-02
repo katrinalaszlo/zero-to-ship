@@ -54,12 +54,12 @@ Real lessons from a PM learning to build, starting from zero:
 
 | Lesson | What you'll learn |
 |--------|-------------------|
-| [The Learning Map](lessons/learning-map.html) | Overview of the full journey |
-| [Data Pipeline](lessons/lesson-2-data-pipeline.html) | How data flows from raw input to something usable |
-| [Model Architecture](lessons/lesson-3-model-architecture.html) | What a neural network actually is, in terms you already know |
-| [Training Loop](lessons/lesson-4-training-loop.html) | How AI learns, and why it matters for your product decisions |
+| [The Learning Map](lessons/01-learning-map.md) | Overview of the full journey |
+| [Data Pipeline](lessons/02-data-pipeline.md) | How data flows from raw input to something usable |
+| [Model Architecture](lessons/03-model-architecture.md) | What a neural network actually is, in terms you already know |
+| [Training Loop](lessons/04-training-loop.md) | How AI learns, and why it matters for your product decisions |
 
-*Lessons are HTML files. Download them and open in your browser to view.*
+*Each lesson also has a [styled HTML version](lessons/html/) with diagrams -- download and open in your browser.*
 
 ### The Blog
 
