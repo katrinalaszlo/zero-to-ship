@@ -58,6 +58,7 @@ Real lessons from a PM learning to build, starting from zero:
 | [Data Pipeline](lessons/02-data-pipeline.md) | How data flows from raw input to something usable |
 | [Model Architecture](lessons/03-model-architecture.md) | What a neural network actually is, in terms you already know |
 | [Training Loop](lessons/04-training-loop.md) | How AI learns, and why it matters for your product decisions |
+| [Managing Agent Teams](lessons/05-managing-agent-teams.md) | Multi-agent systems explained for PMs who manage engineers |
 
 *Each lesson also has a [styled HTML version](lessons/html/) with diagrams -- download and open in your browser.*
 

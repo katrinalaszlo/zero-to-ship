@@ -1,0 +1,1726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lesson 5: Managing Agent Teams</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0d1117;
+  --bg-card: #161b22;
+  --bg-card-hover: #1c2230;
+  --bg-inset: #0d1117;
+  --border: #30363d;
+  --border-light: #21262d;
+  --text: #e6edf3;
+  --text-dim: #8b949e;
+  --text-bright: #f0f6fc;
+  --accent: #58a6ff;
+  --accent-dim: #1f6feb;
+  --green: #3fb950;
+  --green-dim: #238636;
+  --red: #f85149;
+  --red-dim: #da3633;
+  --orange: #d29922;
+  --purple: #bc8cff;
+  --cyan: #39d2c0;
+  --mono: ui-monospace, 'SF Mono', Menlo, 'Cascadia Code', 'Liberation Mono', monospace;
+  --sans: -apple-system, Inter, 'Segoe UI', system-ui, Helvetica, Arial, sans-serif;
+  --radius: 8px;
+  --radius-lg: 12px;
+}
+
+html { scroll-behavior: smooth; font-size: 16px; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---- NAV ---- */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  background: rgba(13, 17, 23, 0.92);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center;
+  padding: 0 24px; height: 52px;
+  gap: 6px;
+  overflow-x: auto;
+}
+nav .logo {
+  font-family: var(--mono); font-size: 13px; font-weight: 600;
+  color: var(--accent); white-space: nowrap; margin-right: 16px;
+  letter-spacing: -0.3px;
+}
+nav a {
+  font-size: 12px; color: var(--text-dim); text-decoration: none;
+  padding: 6px 10px; border-radius: 6px; white-space: nowrap;
+  transition: color 0.15s, background 0.15s;
+}
+nav a:hover, nav a.active { color: var(--text); background: var(--bg-card); }
+nav a.active { color: var(--accent); }
+
+/* ---- PROGRESS ---- */
+.progress-bar {
+  position: fixed; top: 52px; left: 0; right: 0; z-index: 99;
+  height: 2px; background: var(--border);
+}
+.progress-bar .fill {
+  height: 100%; width: 0; background: var(--accent);
+  transition: width 0.3s ease;
+}
+
+/* ---- MAIN ---- */
+main { max-width: 960px; margin: 0 auto; padding: 80px 24px 120px; }
+
+section { margin-bottom: 96px; scroll-margin-top: 72px; }
+
+h1 {
+  font-size: 32px; font-weight: 700; color: var(--text-bright);
+  margin-bottom: 8px; letter-spacing: -0.5px;
+}
+h2 {
+  font-size: 24px; font-weight: 600; color: var(--text-bright);
+  margin-bottom: 6px; letter-spacing: -0.3px;
+}
+h3 {
+  font-size: 16px; font-weight: 600; color: var(--text);
+  margin-bottom: 8px;
+}
+.subtitle {
+  font-size: 14px; color: var(--text-dim); margin-bottom: 32px;
+}
+
+p { margin-bottom: 16px; color: var(--text); font-size: 15px; }
+p.dim { color: var(--text-dim); font-size: 14px; }
+
+.card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 24px;
+  margin-bottom: 16px;
+}
+.card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+.tag {
+  display: inline-block; font-size: 11px; font-family: var(--mono);
+  padding: 2px 8px; border-radius: 4px;
+  background: var(--accent-dim); color: var(--accent);
+  margin-right: 4px; margin-bottom: 4px;
+}
+.tag.green { background: var(--green-dim); color: var(--green); }
+.tag.red { background: var(--red-dim); color: var(--red); }
+.tag.orange { background: rgba(210, 153, 34, 0.2); color: var(--orange); }
+.tag.purple { background: rgba(188, 140, 255, 0.15); color: var(--purple); }
+
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: var(--mono); font-size: 13px;
+  padding: 8px 16px; border-radius: 6px;
+  border: 1px solid var(--accent-dim); background: var(--accent-dim);
+  color: var(--accent); cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.btn:hover { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn:disabled:hover { background: var(--accent-dim); color: var(--accent); }
+.btn.secondary {
+  background: transparent; border-color: var(--border);
+  color: var(--text-dim);
+}
+.btn.secondary:hover { border-color: var(--text-dim); color: var(--text); background: transparent; }
+
+.analogy {
+  border-left: 3px solid var(--accent-dim);
+  padding: 12px 16px; margin: 16px 0;
+  font-size: 14px; color: var(--text-dim);
+  background: rgba(31, 111, 235, 0.06);
+  border-radius: 0 var(--radius) var(--radius) 0;
+}
+.analogy strong { color: var(--accent); font-weight: 600; }
+
+code {
+  font-family: var(--mono); font-size: 13px;
+  background: var(--bg-inset); padding: 2px 6px;
+  border-radius: 4px; color: var(--cyan);
+}
+
+/* ---- SECTION 1: AGENT LOOP ---- */
+.loop-container {
+  display: flex; gap: 40px; align-items: flex-start;
+  margin-top: 24px; flex-wrap: wrap;
+}
+.loop-visual {
+  flex: 1; min-width: 300px;
+  display: flex; flex-direction: column; align-items: center;
+}
+.loop-ring {
+  position: relative; width: 280px; height: 280px; margin-bottom: 20px;
+}
+.loop-node {
+  position: absolute; width: 72px; height: 36px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--mono); font-size: 12px; font-weight: 600;
+  border-radius: 6px; border: 2px solid var(--border);
+  background: var(--bg-card); color: var(--text-dim);
+  transition: border-color 0.3s, color 0.3s, background 0.3s, box-shadow 0.3s;
+}
+.loop-node.active {
+  border-color: var(--accent); color: var(--accent);
+  background: rgba(31, 111, 235, 0.12);
+  box-shadow: 0 0 16px rgba(88, 166, 255, 0.2);
+}
+.loop-node.done {
+  border-color: var(--green); color: var(--green);
+  background: rgba(63, 185, 80, 0.12);
+}
+.loop-node.terminated {
+  border-color: var(--red); color: var(--red);
+  background: rgba(248, 81, 73, 0.12);
+}
+/* Position nodes in a circle */
+.loop-node:nth-child(1) { top: 0; left: 50%; transform: translateX(-50%); }
+.loop-node:nth-child(2) { top: 50%; right: 0; transform: translateY(-50%) translateX(10px); }
+.loop-node:nth-child(3) { bottom: 0; left: 50%; transform: translateX(-50%); }
+.loop-node:nth-child(4) { top: 50%; left: 0; transform: translateY(-50%) translateX(-10px); }
+
+.loop-arrows {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  pointer-events: none;
+}
+.loop-arrow {
+  position: absolute; font-size: 18px; color: var(--border);
+  transition: color 0.3s;
+}
+.loop-arrow.lit { color: var(--accent); }
+.loop-arrow:nth-child(1) { top: 20%; right: 18%; }
+.loop-arrow:nth-child(2) { bottom: 20%; right: 18%; }
+.loop-arrow:nth-child(3) { bottom: 20%; left: 18%; }
+.loop-arrow:nth-child(4) { top: 20%; left: 18%; }
+
+.loop-counter {
+  font-family: var(--mono); font-size: 13px;
+  color: var(--text-dim); margin-bottom: 12px;
+}
+.loop-status {
+  font-family: var(--mono); font-size: 12px;
+  color: var(--text-dim); height: 20px;
+}
+
+.loop-info { flex: 1; min-width: 280px; }
+
+/* ---- SECTION 2: DAG ---- */
+.dag-container { position: relative; margin: 24px 0; }
+.dag-canvas {
+  position: relative; width: 100%; height: 340px;
+  background: var(--bg-inset); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); overflow: hidden;
+}
+.dag-node {
+  position: absolute; padding: 10px 18px;
+  font-family: var(--mono); font-size: 13px; font-weight: 600;
+  border-radius: 8px; border: 2px solid var(--border);
+  background: var(--bg-card); color: var(--text-dim);
+  transition: border-color 0.4s, color 0.4s, background 0.4s, box-shadow 0.4s;
+  text-align: center; z-index: 2;
+}
+.dag-node .label { display: block; font-size: 13px; }
+.dag-node .role { display: block; font-size: 10px; font-weight: 400; margin-top: 2px; opacity: 0.7; }
+.dag-node.waiting { border-color: var(--border); color: var(--text-dim); }
+.dag-node.running {
+  border-color: var(--accent); color: var(--accent);
+  background: rgba(31, 111, 235, 0.12);
+  box-shadow: 0 0 20px rgba(88, 166, 255, 0.15);
+}
+.dag-node.done {
+  border-color: var(--green); color: var(--green);
+  background: rgba(63, 185, 80, 0.1);
+}
+.dag-svg {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  z-index: 1;
+}
+.dag-edge { stroke: var(--border); stroke-width: 2; fill: none; }
+.dag-edge.active { stroke: var(--accent); }
+.dag-edge.done { stroke: var(--green); }
+.dag-particle {
+  fill: var(--accent); r: 4; opacity: 0;
+}
+
+/* ---- SECTION 3: MEETING VS WORKSPACE ---- */
+.models-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 24px; }
+.model-panel {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); overflow: hidden;
+}
+.model-header {
+  padding: 16px 20px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.model-header h3 { margin: 0; }
+.model-viewport {
+  height: 260px; position: relative; overflow: hidden;
+  background: var(--bg-inset);
+}
+.model-footer {
+  padding: 12px 20px; font-size: 13px; color: var(--text-dim);
+  border-top: 1px solid var(--border);
+}
+/* Chat bubbles for meeting model */
+.chat-bubble {
+  position: absolute; padding: 6px 10px;
+  font-family: var(--mono); font-size: 11px;
+  border-radius: 8px; white-space: nowrap;
+  opacity: 0; transition: opacity 0.3s;
+  max-width: 180px; overflow: hidden; text-overflow: ellipsis;
+}
+/* Workspace items */
+.ws-agent {
+  position: absolute; width: 36px; height: 36px;
+  border-radius: 6px; border: 2px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--mono); font-size: 12px; font-weight: 700;
+  background: var(--bg-card); color: var(--text-dim);
+  transition: border-color 0.4s, color 0.4s;
+}
+.ws-file {
+  position: absolute; padding: 4px 8px;
+  font-family: var(--mono); font-size: 10px;
+  border-radius: 4px; border: 1px solid var(--border);
+  background: var(--bg-card); color: var(--text-dim);
+  transition: border-color 0.4s, color 0.4s, background 0.4s;
+}
+.ws-file.written {
+  border-color: var(--green); color: var(--green);
+  background: rgba(63, 185, 80, 0.1);
+}
+.ws-arrow-line {
+  position: absolute; height: 2px;
+  background: var(--border);
+  transform-origin: left center;
+  transition: background 0.4s;
+}
+.ws-arrow-line.active { background: var(--accent); }
+
+/* ---- SECTION 4: TWO REASONS ---- */
+.reason-demo {
+  margin-top: 16px;
+  display: flex; gap: 20px; align-items: stretch;
+}
+.reason-before, .reason-after {
+  flex: 1; padding: 16px;
+  border-radius: var(--radius); border: 1px solid var(--border);
+  background: var(--bg-inset);
+  display: flex; flex-direction: column; align-items: center;
+}
+.reason-before h4, .reason-after h4 {
+  font-size: 11px; font-family: var(--mono); text-transform: uppercase;
+  letter-spacing: 1px; margin-bottom: 12px; color: var(--text-dim);
+}
+.ctx-bar {
+  width: 100%; height: 24px; border-radius: 4px;
+  margin-bottom: 8px; position: relative; overflow: hidden;
+  border: 1px solid var(--border);
+}
+.ctx-fill {
+  height: 100%; border-radius: 3px;
+  transition: width 0.6s ease;
+}
+.ctx-label {
+  font-family: var(--mono); font-size: 10px; color: var(--text-dim);
+  margin-bottom: 4px; align-self: flex-start;
+}
+.timeline-bar {
+  display: flex; gap: 2px; width: 100%;
+}
+.timeline-seg {
+  height: 32px; border-radius: 3px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--mono); font-size: 10px;
+  transition: all 0.4s ease;
+}
+
+/* ---- SECTION 5: SIX KNOBS ---- */
+.knobs-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+  margin-top: 24px;
+}
+.knob-tile {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px;
+  cursor: pointer; transition: border-color 0.2s, background 0.2s;
+  text-align: center;
+}
+.knob-tile:hover { border-color: var(--text-dim); }
+.knob-tile.selected { border-color: var(--accent); background: rgba(31, 111, 235, 0.08); }
+.knob-icon {
+  width: 48px; height: 48px; margin: 0 auto 10px;
+  border-radius: 50%; border: 2px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; color: var(--text-dim);
+  transition: border-color 0.2s, color 0.2s;
+}
+.knob-tile.selected .knob-icon { border-color: var(--accent); color: var(--accent); }
+.knob-tile .knob-name {
+  font-family: var(--mono); font-size: 13px; font-weight: 600;
+  color: var(--text); margin-bottom: 4px;
+}
+.knob-tile .knob-short { font-size: 12px; color: var(--text-dim); }
+.knob-detail {
+  margin-top: 20px; padding: 24px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); display: none;
+}
+.knob-detail.visible { display: block; }
+.knob-detail h3 { color: var(--accent); margin-bottom: 12px; }
+.knob-detail .row { display: grid; grid-template-columns: 100px 1fr; gap: 8px; margin-bottom: 10px; font-size: 14px; }
+.knob-detail .row .label { color: var(--text-dim); font-family: var(--mono); font-size: 12px; }
+.knob-states {
+  display: flex; gap: 8px; margin-top: 16px;
+}
+.knob-state {
+  flex: 1; padding: 12px; border-radius: var(--radius);
+  border: 1px solid var(--border); text-align: center;
+  cursor: pointer; transition: border-color 0.2s, background 0.2s;
+}
+.knob-state:hover { border-color: var(--text-dim); }
+.knob-state.active { border-color: var(--accent); background: rgba(31,111,235,0.08); }
+.knob-state.bad { border-color: var(--red); background: rgba(248,81,73,0.08); }
+.knob-state .state-name { font-family: var(--mono); font-size: 12px; font-weight: 600; margin-bottom: 4px; }
+.knob-state .state-desc { font-size: 11px; color: var(--text-dim); }
+
+/* ---- SECTION 6: FOUR PATTERNS ---- */
+.pattern-tabs {
+  display: flex; gap: 4px; margin-bottom: 20px;
+  border-bottom: 1px solid var(--border); padding-bottom: 0;
+}
+.pattern-tab {
+  padding: 10px 16px; font-family: var(--mono); font-size: 13px;
+  color: var(--text-dim); cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: color 0.2s, border-color 0.2s;
+  background: none; border-top: none; border-left: none; border-right: none;
+}
+.pattern-tab:hover { color: var(--text); }
+.pattern-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.pattern-panel { display: none; }
+.pattern-panel.active { display: block; }
+.pattern-dag {
+  position: relative; width: 100%; height: 200px;
+  background: var(--bg-inset); border: 1px solid var(--border);
+  border-radius: var(--radius); margin-bottom: 16px; overflow: hidden;
+}
+.pattern-node {
+  position: absolute; padding: 8px 14px;
+  font-family: var(--mono); font-size: 12px; font-weight: 600;
+  border-radius: 6px; border: 2px solid var(--border);
+  background: var(--bg-card); color: var(--text-dim);
+  transition: all 0.4s; z-index: 2;
+}
+.pattern-node.running { border-color: var(--accent); color: var(--accent); background: rgba(31,111,235,0.12); }
+.pattern-node.done { border-color: var(--green); color: var(--green); background: rgba(63,185,80,0.1); }
+.pattern-node.parallel-highlight { box-shadow: 0 0 0 3px rgba(188, 140, 255, 0.3); }
+
+/* ---- SECTION 7: MAP ---- */
+.scope-stack {
+  margin-top: 24px; position: relative;
+}
+.scope-layer {
+  border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 16px; margin-bottom: -1px;
+  background: var(--bg-card);
+  transition: border-color 0.3s, background 0.3s;
+}
+.scope-layer.active { border-color: var(--accent); background: rgba(31,111,235,0.06); }
+.scope-layer .scope-title {
+  font-family: var(--mono); font-size: 12px; font-weight: 600;
+  color: var(--text-dim); margin-bottom: 8px;
+  display: flex; align-items: center; gap: 8px;
+}
+.scope-layer.active .scope-title { color: var(--accent); }
+.scope-layer .scope-items {
+  display: flex; flex-wrap: wrap; gap: 6px;
+}
+.scope-item {
+  font-family: var(--mono); font-size: 11px;
+  padding: 3px 8px; border-radius: 4px;
+  background: var(--bg-inset); border: 1px solid var(--border);
+  color: var(--text-dim);
+}
+.scope-inner { padding-left: 20px; margin-top: 12px; }
+
+.instruction-stack {
+  margin-top: 32px;
+}
+.inst-layer {
+  display: flex; align-items: center; gap: 12px;
+  padding: 8px 12px; margin-bottom: 2px;
+  border-radius: 4px; font-family: var(--mono); font-size: 12px;
+  color: var(--text-dim); background: var(--bg-inset);
+  border: 1px solid transparent;
+  transition: all 0.3s;
+  cursor: default;
+}
+.inst-layer .num {
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--border); color: var(--text-dim);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 700; flex-shrink: 0;
+}
+.inst-layer.lit {
+  border-color: var(--accent); background: rgba(31,111,235,0.06);
+  color: var(--accent);
+}
+.inst-layer.lit .num { background: var(--accent-dim); color: var(--accent); }
+
+/* ---- SECTION 8: QUIZ ---- */
+.quiz-progress {
+  font-family: var(--mono); font-size: 12px;
+  color: var(--text-dim); margin-bottom: 16px;
+}
+.quiz-scenario {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 24px;
+  margin-bottom: 20px;
+}
+.quiz-scenario .scenario-text {
+  font-size: 14px; line-height: 1.7; margin-bottom: 20px;
+  white-space: pre-line;
+}
+.quiz-question {
+  margin-bottom: 16px;
+}
+.quiz-question .q-label {
+  font-family: var(--mono); font-size: 12px; font-weight: 600;
+  color: var(--text-dim); margin-bottom: 8px;
+}
+.quiz-options { display: flex; flex-wrap: wrap; gap: 6px; }
+.quiz-opt {
+  padding: 6px 12px; font-size: 13px; border-radius: 6px;
+  border: 1px solid var(--border); background: var(--bg-inset);
+  color: var(--text-dim); cursor: pointer;
+  transition: all 0.2s;
+}
+.quiz-opt:hover { border-color: var(--text-dim); color: var(--text); }
+.quiz-opt.selected { border-color: var(--accent); color: var(--accent); background: rgba(31,111,235,0.1); }
+.quiz-opt.correct { border-color: var(--green); color: var(--green); background: rgba(63,185,80,0.1); }
+.quiz-opt.wrong { border-color: var(--red); color: var(--red); background: rgba(248,81,73,0.1); }
+
+.quiz-result {
+  margin-top: 16px; padding: 16px;
+  border-radius: var(--radius); border: 1px solid var(--border);
+  background: var(--bg-inset); display: none;
+  font-size: 14px;
+}
+.quiz-result.visible { display: block; }
+.quiz-result.pass { border-color: var(--green-dim); }
+.quiz-result.fail { border-color: var(--red-dim); }
+
+.quiz-score {
+  margin-top: 24px; padding: 20px; text-align: center;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); display: none;
+}
+.quiz-score.visible { display: block; }
+.quiz-score .score-num {
+  font-family: var(--mono); font-size: 48px; font-weight: 700;
+  color: var(--accent);
+}
+
+/* ---- RESPONSIVE ---- */
+@media (max-width: 700px) {
+  .card-grid, .models-grid, .knobs-grid { grid-template-columns: 1fr; }
+  .loop-container { flex-direction: column; }
+  .reason-demo { flex-direction: column; }
+  nav { padding: 0 12px; }
+  nav a { font-size: 11px; padding: 6px 8px; }
+}
+</style>
+</head>
+<body>
+
+<nav id="navbar">
+  <a href="../../" style="text-decoration:none"><span class="logo" style="cursor:pointer">Zero to Ship</span></a>
+  <span style="color:var(--text-dim);font-size:12px;margin-right:12px">/</span>
+  <span style="font-size:12px;color:var(--text);margin-right:16px">Lesson 5</span>
+  <a href="#s1">Agent</a>
+  <a href="#s2">DAG</a>
+  <a href="#s3">Models</a>
+  <a href="#s4">Why Split</a>
+  <a href="#s5">Six Knobs</a>
+  <a href="#s6">Patterns</a>
+  <a href="#s7">Real Setup</a>
+  <a href="#s8">The Test</a>
+</nav>
+
+<div class="progress-bar"><div class="fill" id="progressFill"></div></div>
+
+<main>
+
+<h1>Lesson 5: Managing Agent Teams</h1>
+<p class="subtitle">From managing engineers to managing agents</p>
+
+<!-- ======== SECTION 1: WHAT IS AN AGENT? ======== -->
+<section id="s1">
+  <h2>What is an agent?</h2>
+  <p class="subtitle">An agent is a loop. That's it.</p>
+
+  <div class="loop-container">
+    <div class="loop-visual">
+      <div class="loop-ring" id="loopRing">
+        <div class="loop-node" id="ln-observe">Observe</div>
+        <div class="loop-node" id="ln-think">Think</div>
+        <div class="loop-node" id="ln-check">Check</div>
+        <div class="loop-node" id="ln-act">Act</div>
+        <div class="loop-arrows">
+          <div class="loop-arrow" id="la-0">&#8600;</div>
+          <div class="loop-arrow" id="la-1">&#8598;</div>
+          <div class="loop-arrow" id="la-2">&#8599;</div>
+          <div class="loop-arrow" id="la-3">&#8601;</div>
+        </div>
+      </div>
+      <div class="loop-counter" id="loopCounter">Iteration: --</div>
+      <div class="loop-status" id="loopStatus">Click "Run Loop" to start</div>
+      <button class="btn" id="loopBtn" style="margin-top:12px" onclick="runAgentLoop()">Run Loop</button>
+    </div>
+
+    <div class="loop-info">
+      <div class="analogy">
+        <strong>PM analogy:</strong> An engineer working a ticket does the same loop. Look at the ticket, think about the approach, write code, check if it works. Repeat until done. The difference: agents loop in seconds, not hours.
+      </div>
+      <p>A function runs once and returns. An agent keeps going until it decides it's finished.</p>
+      <p>When you give Claude Code a task and it reads files, edits code, runs tests, fixes errors, and tries again -- that's this loop.</p>
+      <h3 style="margin-top:20px">The key word: termination condition</h3>
+      <p>"Tests pass" is a termination condition. "I've been going for 50 iterations" is a termination condition. Without one, the agent keeps running forever.</p>
+      <p class="dim">This is the equivalent of an engineer who never ships -- they keep polishing forever.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ======== SECTION 2: WHAT IS A DAG? ======== -->
+<section id="s2">
+  <h2>What is a DAG?</h2>
+  <p class="subtitle">A directed acyclic graph. Or: a project plan drawn as a diagram.</p>
+
+  <div class="dag-container">
+    <div class="dag-canvas" id="dagCanvas">
+      <svg class="dag-svg" id="dagSvg"></svg>
+      <div class="dag-node waiting" id="dn-alice" style="top:20px;left:50%;transform:translateX(-50%)">
+        <span class="label">Alice</span><span class="role">research</span>
+      </div>
+      <div class="dag-node waiting" id="dn-bob" style="top:130px;left:25%;transform:translateX(-50%)">
+        <span class="label">Bob</span><span class="role">backend</span>
+      </div>
+      <div class="dag-node waiting" id="dn-carol" style="top:130px;left:75%;transform:translateX(-50%)">
+        <span class="label">Carol</span><span class="role">frontend</span>
+      </div>
+      <div class="dag-node waiting" id="dn-you" style="top:240px;left:50%;transform:translateX(-50%)">
+        <span class="label">You</span><span class="role">review</span>
+      </div>
+    </div>
+    <div style="display:flex;gap:12px;align-items:center;margin-top:16px">
+      <button class="btn" id="dagBtn" onclick="runDag()">Run</button>
+      <button class="btn secondary" onclick="resetDag()">Reset</button>
+      <div style="display:flex;gap:12px;margin-left:auto">
+        <span class="tag">waiting</span>
+        <span class="tag" style="background:rgba(31,111,235,0.2);color:var(--accent)">running</span>
+        <span class="tag green">done</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="analogy">
+    <strong>PM analogy:</strong> This is just a project plan. Alice writes a spec. Bob and Carol work in parallel (they don't depend on each other). You review at the end. You already think in DAGs -- every Gantt chart is one. The only new thing: the workers are agents instead of humans.
+  </div>
+
+  <p><strong>Directed</strong> means data flows one way (Alice to Bob, not Bob to Alice). <strong>Acyclic</strong> means no circles -- nobody waiting on someone who's waiting on them.</p>
+</section>
+
+<!-- ======== SECTION 3: MEETING VS WORKSPACE ======== -->
+<section id="s3">
+  <h2>Meeting model vs Workspace model</h2>
+  <p class="subtitle">Two ways agents share work. One works. One mostly doesn't.</p>
+
+  <div style="text-align:center;margin-bottom:16px">
+    <button class="btn" id="modelsBtn" onclick="runModels()">Animate Both</button>
+    <button class="btn secondary" onclick="resetModels()">Reset</button>
+  </div>
+
+  <div class="models-grid">
+    <!-- Meeting model -->
+    <div class="model-panel" id="meetingPanel">
+      <div class="model-header">
+        <h3 style="color:var(--red)">Meeting Model</h3>
+        <span class="tag red">chaotic</span>
+      </div>
+      <div class="model-viewport" id="meetingViewport"></div>
+      <div class="model-footer">
+        Every message fills every agent's context with irrelevant noise. Like putting your whole team in one Slack channel.
+      </div>
+    </div>
+
+    <!-- Workspace model -->
+    <div class="model-panel" id="workspacePanel">
+      <div class="model-header">
+        <h3 style="color:var(--green)">Workspace Model</h3>
+        <span class="tag green">clean</span>
+      </div>
+      <div class="model-viewport" id="workspaceViewport"></div>
+      <div class="model-footer">
+        Agents read/write to shared files. No direct communication. Like engineers pushing to a repo. Each sees only what's relevant.
+      </div>
+    </div>
+  </div>
+
+  <div class="analogy" style="margin-top:20px">
+    <strong>PM analogy:</strong> The meeting model is every engineer in one noisy Slack channel doing all work by chatting. Works for 3, chaos for 10. The workspace model is how your team actually works: push to repo, pull what you need, never sit in a meeting about it.
+  </div>
+</section>
+
+<!-- ======== SECTION 4: WHY SPLIT ======== -->
+<section id="s4">
+  <h2>The two reasons to split</h2>
+  <p class="subtitle">If neither applies, keep it in one agent.</p>
+
+  <div class="card-grid">
+    <!-- Context Protection -->
+    <div class="card">
+      <h3 style="color:var(--cyan)">Context Protection</h3>
+      <p class="dim">LLMs get worse as context fills with irrelevant content. Not a cliff -- a gradual degradation. The model "loses the thread."</p>
+
+      <div class="reason-demo" id="contextDemo">
+        <div class="reason-before">
+          <h4>One Agent</h4>
+          <div class="ctx-label">context window</div>
+          <div class="ctx-bar"><div class="ctx-fill" id="ctx-single" style="width:0;background:var(--red)"></div></div>
+          <div class="ctx-label" style="margin-top:8px">quality</div>
+          <div class="ctx-bar"><div class="ctx-fill" id="qual-single" style="width:100%;background:var(--green)"></div></div>
+          <p class="dim" style="margin-top:12px;font-size:12px;text-align:center">Bloated context, degrading output</p>
+        </div>
+        <div class="reason-after">
+          <h4>Two Agents</h4>
+          <div class="ctx-label">agent A context</div>
+          <div class="ctx-bar"><div class="ctx-fill" id="ctx-a" style="width:0;background:var(--green)"></div></div>
+          <div class="ctx-label">agent B context</div>
+          <div class="ctx-bar"><div class="ctx-fill" id="ctx-b" style="width:0;background:var(--green)"></div></div>
+          <div class="ctx-label" style="margin-top:8px">quality</div>
+          <div class="ctx-bar"><div class="ctx-fill" id="qual-split" style="width:100%;background:var(--green)"></div></div>
+          <p class="dim" style="margin-top:12px;font-size:12px;text-align:center">Focused contexts, clean output</p>
+        </div>
+      </div>
+      <button class="btn" style="margin-top:12px;width:100%" onclick="animateContext()">Show Degradation</button>
+
+      <div class="analogy" style="margin-top:16px">
+        <strong>PM analogy:</strong> You don't invite the whole company to every meeting. You invite the people who need to be there and give them only the context they need.
+      </div>
+    </div>
+
+    <!-- Parallelism -->
+    <div class="card">
+      <h3 style="color:var(--purple)">Parallelism</h3>
+      <p class="dim">Independent tasks run at the same time. But the subtler benefit: it avoids path dependence.</p>
+
+      <div class="reason-demo" style="flex-direction:column">
+        <div style="width:100%">
+          <h4 style="font-size:11px;font-family:var(--mono);text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:8px">Sequential (slow, anchored)</h4>
+          <div class="timeline-bar" id="seqBar">
+            <div class="timeline-seg" id="seq-a" style="flex:1;background:var(--bg-inset);border:1px solid var(--border);color:var(--text-dim)">A</div>
+            <div class="timeline-seg" id="seq-b" style="flex:1;background:var(--bg-inset);border:1px solid var(--border);color:var(--text-dim)">B</div>
+            <div class="timeline-seg" id="seq-c" style="flex:1;background:var(--bg-inset);border:1px solid var(--border);color:var(--text-dim)">C</div>
+          </div>
+          <p class="dim" style="font-size:11px;margin-top:4px">Each anchored by previous result</p>
+        </div>
+        <div style="width:100%;margin-top:16px">
+          <h4 style="font-size:11px;font-family:var(--mono);text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:8px">Parallel (fast, independent)</h4>
+          <div class="timeline-bar" id="parBar">
+            <div class="timeline-seg" id="par-a" style="flex:1;background:var(--bg-inset);border:1px solid var(--border);color:var(--text-dim)">A</div>
+            <div class="timeline-seg" id="par-b" style="flex:1;background:var(--bg-inset);border:1px solid var(--border);color:var(--text-dim)">B</div>
+            <div class="timeline-seg" id="par-c" style="flex:1;background:var(--bg-inset);border:1px solid var(--border);color:var(--text-dim)">C</div>
+          </div>
+          <p class="dim" style="font-size:11px;margin-top:4px">Independent evaluation, no anchoring</p>
+        </div>
+      </div>
+      <button class="btn" style="margin-top:12px;width:100%" onclick="animateParallelism()">Show Difference</button>
+
+      <div class="analogy" style="margin-top:16px">
+        <strong>PM analogy:</strong> You send two engineers to evaluate two approaches independently. If one evaluates both sequentially, they unconsciously favor whichever they looked at first.
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:16px;text-align:center">
+    <h3>The Filter</h3>
+    <p style="margin-bottom:0">Before splitting any task across agents, ask: <strong>"Am I buying context protection, parallelism, or neither?"</strong> If neither, you've added complexity for nothing.</p>
+  </div>
+</section>
+
+<!-- ======== SECTION 5: SIX KNOBS ======== -->
+<section id="s5">
+  <h2>Six knobs per agent</h2>
+  <p class="subtitle">Every agent has exactly six things you configure. When something goes wrong, it's almost always one of these.</p>
+
+  <div class="knobs-grid" id="knobsGrid"></div>
+  <div class="knob-detail" id="knobDetail"></div>
+</section>
+
+<!-- ======== SECTION 6: FOUR PATTERNS ======== -->
+<section id="s6">
+  <h2>Four patterns</h2>
+  <p class="subtitle">Almost every multi-agent system is one of these, or a combination.</p>
+
+  <div class="pattern-tabs" id="patternTabs">
+    <button class="pattern-tab active" data-pat="pipeline">Pipeline</button>
+    <button class="pattern-tab" data-pat="fanout">Fan-out / Fan-in</button>
+    <button class="pattern-tab" data-pat="phased">Phased-parallel</button>
+    <button class="pattern-tab" data-pat="verifier">Verifier-in-the-loop</button>
+  </div>
+
+  <div class="pattern-panel active" id="pat-pipeline">
+    <div class="pattern-dag" id="pipeDag"></div>
+    <p><strong>A -> B -> C.</strong> Each stage does one thing, passes output to the next.</p>
+    <p class="dim">Example: Research -> Implement -> Test. Simple, linear, easy to debug. Use when each step genuinely needs different context or tools.</p>
+    <button class="btn" onclick="animatePattern('pipeline')">Run Pipeline</button>
+  </div>
+
+  <div class="pattern-panel" id="pat-fanout">
+    <div class="pattern-dag" id="fanDag"></div>
+    <p><strong>One coordinator splits work to N workers, results get merged.</strong> This is map-reduce.</p>
+    <p class="dim">Example: "Research 5 competitors" -> 5 agents each research one -> coordinator synthesizes. <span class="tag purple" style="font-size:10px">parallel</span> section highlighted.</p>
+    <button class="btn" onclick="animatePattern('fanout')">Run Fan-out</button>
+  </div>
+
+  <div class="pattern-panel" id="pat-phased">
+    <div class="pattern-dag" id="phaseDag" style="height:280px"></div>
+    <p><strong>Multiple waves of fan-out/fan-in.</strong> Each wave's output shapes the next. The most powerful pattern.</p>
+    <p class="dim">Example: Classify notes (parallel) -> Cross-reference per category (parallel) -> Write articles (parallel) -> Editorial review.</p>
+    <button class="btn" onclick="animatePattern('phased')">Run Phases</button>
+  </div>
+
+  <div class="pattern-panel" id="pat-verifier">
+    <div class="pattern-dag" id="verDag"></div>
+    <p><strong>After every write, an independent agent checks the work.</strong> If pass, next step. If fail, back to writer.</p>
+    <p class="dim">Equivalent of requiring code review before merge. Cheap and catches most regressions.</p>
+    <button class="btn" onclick="animatePattern('verifier')">Run Verifier Loop</button>
+  </div>
+</section>
+
+<!-- ======== SECTION 7: A REAL SETUP ======== -->
+<section id="s7">
+  <h2>A Real Setup</h2>
+  <p class="subtitle">20+ agents. 4 scopes. You're the orchestrator -- and you can't see the system you're orchestrating.</p>
+
+  <h3 style="margin-bottom:16px">Agent Scopes</h3>
+  <div class="scope-stack" id="scopeStack">
+    <div class="scope-layer" data-scope="global">
+      <div class="scope-title">
+        <span style="color:var(--accent)">&#9670;</span> Global (cross-project agents)
+      </div>
+      <div class="scope-items">
+        <span class="scope-item">skill-capture</span>
+        <span class="scope-item">workforce-review</span>
+        <span class="scope-item">learnings</span>
+        <span class="scope-item">pr-review</span>
+        <span class="scope-item">hallucination-audit</span>
+        <span class="scope-item">drift-check</span>
+        <span class="scope-item">config-audit</span>
+        <span class="scope-item">context-degradation</span>
+        <span class="scope-item">bug-ledger</span>
+      </div>
+
+      <div class="scope-inner">
+        <div class="scope-layer" data-scope="org">
+          <div class="scope-title">
+            <span style="color:var(--purple)">&#9670;</span> Org / Shared (domain agents)
+          </div>
+          <div class="scope-items">
+            <span class="scope-item">feature-dev</span>
+            <span class="scope-item">spec-first</span>
+            <span class="scope-item">testing-expert</span>
+            <span class="scope-item">security-expert</span>
+            <span class="scope-item">performance-expert</span>
+            <span class="scope-item">error-handling</span>
+            <span class="scope-item">api-design</span>
+            <span class="scope-item">docker-expert</span>
+            <span class="scope-item">ci-fixer</span>
+            <span class="scope-item">qa-reviewer</span>
+          </div>
+
+          <div class="scope-inner">
+            <div class="scope-layer" data-scope="backend" style="display:inline-block;vertical-align:top;width:48%;margin-right:2%">
+              <div class="scope-title">
+                <span style="color:var(--green)">&#9670;</span> Backend (repo-specific)
+              </div>
+              <div class="scope-items">
+                <span class="scope-item">optimize-db</span>
+                <span class="scope-item">security-audit</span>
+                <span class="scope-item">monitoring</span>
+                <span class="scope-item">hotfix-deploy</span>
+                <span class="scope-item">rest-api</span>
+                <span class="scope-item">perf-audit</span>
+              </div>
+            </div>
+            <div class="scope-layer" data-scope="frontend" style="display:inline-block;vertical-align:top;width:48%">
+              <div class="scope-title">
+                <span style="color:var(--orange)">&#9670;</span> Frontend (repo-specific)
+              </div>
+              <div class="scope-items">
+                <span class="scope-item">component-lib</span>
+                <span class="scope-item">a11y-checker</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h3 style="margin-top:36px;margin-bottom:16px">The Instruction Stack</h3>
+  <p class="dim" style="margin-bottom:16px">Every time an agent runs, it inherits layers of context. This is what you can't see:</p>
+
+  <div class="instruction-stack" id="instStack">
+    <div class="inst-layer" data-idx="1"><span class="num">1</span> System prompt (model baseline)</div>
+    <div class="inst-layer" data-idx="2"><span class="num">2</span> Global CLAUDE.md (your rules, identity, code quality)</div>
+    <div class="inst-layer" data-idx="3"><span class="num">3</span> Global rules (framework conventions, lint rules)</div>
+    <div class="inst-layer" data-idx="4"><span class="num">4</span> Global rules (error handling, code style)</div>
+    <div class="inst-layer" data-idx="5"><span class="num">5</span> MEMORY.md (auto-persisted context)</div>
+    <div class="inst-layer" data-idx="6"><span class="num">6</span> Project CLAUDE.md (repo-specific rules)</div>
+    <div class="inst-layer" data-idx="7"><span class="num">7</span> Project settings.json (tools, permissions)</div>
+    <div class="inst-layer" data-idx="8"><span class="num">8</span> Hooks (pre/post-commit, lint, format)</div>
+    <div class="inst-layer" data-idx="9"><span class="num">9</span> Skill definitions (~/.claude/skills/)</div>
+    <div class="inst-layer" data-idx="10"><span class="num">10</span> Plugin instructions (MCP servers)</div>
+    <div class="inst-layer" data-idx="11"><span class="num">11</span> Conversation context (your messages + tool results)</div>
+    <div class="inst-layer" data-idx="12"><span class="num">12</span> Subagent scoping (when spawned)</div>
+    <div class="inst-layer" data-idx="13"><span class="num">13</span> Tool schemas (available capabilities)</div>
+  </div>
+  <button class="btn" style="margin-top:16px" onclick="animateInstStack()">Reveal Stack</button>
+
+  <div class="card" style="margin-top:24px;border-color:var(--orange)">
+    <h3 style="color:var(--orange)">The gap</h3>
+    <p style="margin-bottom:0">You're managing a team where you can't see anyone's calendar, don't know what tools they have, and can't check what instructions they were given. The gap isn't better agents -- it's visibility into the system you're already orchestrating.</p>
+  </div>
+</section>
+
+<!-- ======== SECTION 8: THE TEST ======== -->
+<section id="s8">
+  <h2>The Test</h2>
+  <p class="subtitle">Look at a system and name its parts. Three scenarios, increasing difficulty.</p>
+
+  <div class="quiz-progress" id="quizProgress">Scenario 1 of 3</div>
+  <div id="quizContainer"></div>
+  <div class="quiz-score" id="quizScore">
+    <div class="score-num" id="scoreNum">0/18</div>
+    <p style="margin-top:8px;color:var(--text-dim)">You understand multi-agent systems when you can name these six things on sight for any system.</p>
+  </div>
+</section>
+
+</main>
+
+<script>
+// ===== NAVIGATION + PROGRESS =====
+(function() {
+  const sections = document.querySelectorAll('section');
+  const navLinks = document.querySelectorAll('nav a');
+  const fill = document.getElementById('progressFill');
+
+  function update() {
+    const scrollTop = window.scrollY;
+    const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+    const pct = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+    fill.style.width = pct + '%';
+
+    let current = '';
+    sections.forEach(s => {
+      if (s.offsetTop - 100 <= scrollTop) current = s.id;
+    });
+    navLinks.forEach(a => {
+      a.classList.toggle('active', a.getAttribute('href') === '#' + current);
+    });
+  }
+  window.addEventListener('scroll', update, { passive: true });
+  update();
+})();
+
+// ===== SECTION 1: AGENT LOOP =====
+let loopRunning = false;
+function runAgentLoop() {
+  if (loopRunning) return;
+  loopRunning = true;
+  const btn = document.getElementById('loopBtn');
+  btn.disabled = true;
+
+  const nodes = ['ln-observe', 'ln-think', 'ln-act', 'ln-check'];
+  const arrows = ['la-3', 'la-0', 'la-1', 'la-2'];
+  const counter = document.getElementById('loopCounter');
+  const status = document.getElementById('loopStatus');
+
+  // Reset
+  nodes.forEach(id => {
+    const el = document.getElementById(id);
+    el.className = 'loop-node';
+  });
+  arrows.forEach(id => document.getElementById(id).classList.remove('lit'));
+
+  const totalIterations = 4;
+  let iteration = 0;
+  let step = 0;
+
+  function tick() {
+    // Clear previous
+    nodes.forEach(id => {
+      const el = document.getElementById(id);
+      el.classList.remove('active');
+    });
+    arrows.forEach(id => document.getElementById(id).classList.remove('lit'));
+
+    if (iteration >= totalIterations) {
+      // Terminate
+      nodes.forEach(id => document.getElementById(id).classList.add('done'));
+      document.getElementById('ln-check').classList.remove('done');
+      document.getElementById('ln-check').classList.add('terminated');
+      counter.textContent = 'Iteration: ' + totalIterations;
+      status.textContent = 'TERMINATED -- condition met';
+      status.style.color = 'var(--green)';
+      loopRunning = false;
+      btn.disabled = false;
+      return;
+    }
+
+    const nodeId = nodes[step];
+    const arrowId = arrows[step];
+    document.getElementById(nodeId).classList.add('active');
+    document.getElementById(arrowId).classList.add('lit');
+
+    counter.textContent = 'Iteration: ' + (iteration + 1);
+    status.textContent = nodeId.replace('ln-', '').toUpperCase() + '...';
+    status.style.color = 'var(--accent)';
+
+    step++;
+    if (step >= nodes.length) { step = 0; iteration++; }
+
+    setTimeout(tick, 500);
+  }
+  tick();
+}
+
+// ===== SECTION 2: DAG =====
+let dagRunning = false;
+
+function drawDagEdges() {
+  const svg = document.getElementById('dagSvg');
+  const canvas = document.getElementById('dagCanvas');
+  const rect = canvas.getBoundingClientRect();
+
+  function center(id) {
+    const el = document.getElementById(id);
+    const r = el.getBoundingClientRect();
+    return { x: r.left - rect.left + r.width/2, y: r.top - rect.top + r.height/2 };
+  }
+
+  const a = center('dn-alice'), b = center('dn-bob'), c = center('dn-carol'), y = center('dn-you');
+  svg.innerHTML = `
+    <line class="dag-edge" id="de-ab" x1="${a.x}" y1="${a.y+18}" x2="${b.x}" y2="${b.y-18}"/>
+    <line class="dag-edge" id="de-ac" x1="${a.x}" y1="${a.y+18}" x2="${c.x}" y2="${c.y-18}"/>
+    <line class="dag-edge" id="de-by" x1="${b.x}" y1="${b.y+18}" x2="${y.x}" y2="${y.y-18}"/>
+    <line class="dag-edge" id="de-cy" x1="${c.x}" y1="${c.y+18}" x2="${y.x}" y2="${y.y-18}"/>
+  `;
+}
+
+function resetDag() {
+  ['dn-alice','dn-bob','dn-carol','dn-you'].forEach(id => {
+    document.getElementById(id).className = 'dag-node waiting';
+  });
+  drawDagEdges();
+  document.getElementById('dagBtn').disabled = false;
+  dagRunning = false;
+}
+
+function runDag() {
+  if (dagRunning) return;
+  dagRunning = true;
+  document.getElementById('dagBtn').disabled = true;
+  resetDag();
+  dagRunning = true;
+  document.getElementById('dagBtn').disabled = true;
+
+  const steps = [
+    { nodes: ['dn-alice'], edges: [], state: 'running' },
+    { nodes: ['dn-alice'], edges: ['de-ab','de-ac'], state: 'done' },
+    { nodes: ['dn-bob','dn-carol'], edges: [], state: 'running' },
+    { nodes: ['dn-bob','dn-carol'], edges: ['de-by','de-cy'], state: 'done' },
+    { nodes: ['dn-you'], edges: [], state: 'running' },
+    { nodes: ['dn-you'], edges: [], state: 'done' },
+  ];
+
+  let i = 0;
+  function tick() {
+    if (i >= steps.length) { dagRunning = false; document.getElementById('dagBtn').disabled = false; return; }
+    const s = steps[i];
+    s.nodes.forEach(id => {
+      const el = document.getElementById(id);
+      el.className = 'dag-node ' + s.state;
+    });
+    s.edges.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.classList.add('done');
+    });
+    i++;
+    setTimeout(tick, 800);
+  }
+  tick();
+}
+
+window.addEventListener('resize', drawDagEdges);
+setTimeout(drawDagEdges, 100);
+
+// ===== SECTION 3: MEETING VS WORKSPACE =====
+let modelsRunning = false;
+
+function resetModels() {
+  document.getElementById('meetingViewport').innerHTML = '';
+  document.getElementById('workspaceViewport').innerHTML = '';
+  modelsRunning = false;
+  document.getElementById('modelsBtn').disabled = false;
+}
+
+function runModels() {
+  if (modelsRunning) return;
+  modelsRunning = true;
+  document.getElementById('modelsBtn').disabled = true;
+  resetModels();
+  modelsRunning = true;
+  document.getElementById('modelsBtn').disabled = true;
+
+  // --- Meeting model ---
+  const mv = document.getElementById('meetingViewport');
+  const agents = ['A', 'B', 'C', 'D'];
+  const colors = ['var(--accent)', 'var(--green)', 'var(--orange)', 'var(--purple)'];
+  const messages = [
+    'I found the API docs',
+    'That changes my approach',
+    'I disagree with B',
+    'Wait, what about...',
+    'No, listen to me',
+    'I found something else',
+    'This contradicts A',
+    'Can someone clarify?',
+    'Starting over...',
+    'Still confused',
+    'Repeat: the API says...',
+    'Are we done yet?',
+  ];
+
+  let msgIdx = 0;
+  const meetingInterval = setInterval(() => {
+    if (msgIdx >= messages.length) { clearInterval(meetingInterval); return; }
+    const bubble = document.createElement('div');
+    bubble.className = 'chat-bubble';
+    const agentIdx = msgIdx % agents.length;
+    bubble.style.background = colors[agentIdx];
+    bubble.style.color = 'var(--bg)';
+    bubble.style.left = (10 + Math.random() * 50) + '%';
+    bubble.style.top = (10 + Math.random() * 70) + '%';
+    bubble.style.transform = 'rotate(' + (Math.random() * 10 - 5) + 'deg)';
+    bubble.textContent = agents[agentIdx] + ': ' + messages[msgIdx];
+    mv.appendChild(bubble);
+    requestAnimationFrame(() => bubble.style.opacity = '1');
+    msgIdx++;
+  }, 350);
+
+  // --- Workspace model ---
+  const wv = document.getElementById('workspaceViewport');
+  // Setup: agents on left, files in center-right
+  const wsAgents = [
+    { label: 'A', x: 20, y: 40 },
+    { label: 'B', x: 20, y: 110 },
+    { label: 'C', x: 20, y: 180 },
+  ];
+  const wsFiles = [
+    { label: 'spec.md', x: 140, y: 30 },
+    { label: 'api.ts', x: 140, y: 90 },
+    { label: 'ui.vue', x: 140, y: 150 },
+    { label: 'result/', x: 140, y: 210 },
+  ];
+
+  wsAgents.forEach(a => {
+    const el = document.createElement('div');
+    el.className = 'ws-agent';
+    el.id = 'wsa-' + a.label;
+    el.style.left = a.x + 'px'; el.style.top = a.y + 'px';
+    el.textContent = a.label;
+    wv.appendChild(el);
+  });
+
+  wsFiles.forEach(f => {
+    const el = document.createElement('div');
+    el.className = 'ws-file';
+    el.id = 'wsf-' + f.label.replace(/[./]/g, '');
+    el.style.left = f.x + 'px'; el.style.top = f.y + 'px';
+    el.textContent = f.label;
+    wv.appendChild(el);
+  });
+
+  const wsSteps = [
+    { agent: 'A', file: 'specmd', action: 'write', delay: 400 },
+    { agent: 'B', file: 'specmd', action: 'read', delay: 1200 },
+    { agent: 'C', file: 'specmd', action: 'read', delay: 1400 },
+    { agent: 'B', file: 'apits', action: 'write', delay: 2200 },
+    { agent: 'C', file: 'uivue', action: 'write', delay: 2400 },
+    { agent: 'B', file: 'result', action: 'write', delay: 3200 },
+    { agent: 'C', file: 'result', action: 'write', delay: 3400 },
+  ];
+
+  wsSteps.forEach(step => {
+    setTimeout(() => {
+      const agent = document.getElementById('wsa-' + step.agent);
+      const file = document.getElementById('wsf-' + step.file);
+      if (!agent || !file) return;
+
+      if (step.action === 'write') {
+        agent.style.borderColor = 'var(--green)';
+        agent.style.color = 'var(--green)';
+        file.classList.add('written');
+      } else {
+        agent.style.borderColor = 'var(--accent)';
+        agent.style.color = 'var(--accent)';
+        file.style.borderColor = 'var(--accent)';
+      }
+
+      setTimeout(() => {
+        agent.style.borderColor = 'var(--border)';
+        agent.style.color = 'var(--text-dim)';
+        if (step.action === 'read') {
+          file.style.borderColor = 'var(--border)';
+        }
+      }, 600);
+    }, step.delay);
+  });
+}
+
+// ===== SECTION 4: CONTEXT + PARALLELISM =====
+function animateContext() {
+  // Single agent: context fills, quality drops
+  const ctxSingle = document.getElementById('ctx-single');
+  const qualSingle = document.getElementById('qual-single');
+  const ctxA = document.getElementById('ctx-a');
+  const ctxB = document.getElementById('ctx-b');
+  const qualSplit = document.getElementById('qual-split');
+
+  // Reset
+  ctxSingle.style.width = '0'; qualSingle.style.width = '100%'; qualSingle.style.background = 'var(--green)';
+  ctxA.style.width = '0'; ctxB.style.width = '0';
+  qualSplit.style.width = '100%'; qualSplit.style.background = 'var(--green)';
+
+  setTimeout(() => {
+    ctxSingle.style.width = '95%';
+    qualSingle.style.width = '25%';
+    qualSingle.style.background = 'var(--red)';
+
+    ctxA.style.width = '40%';
+    ctxB.style.width = '35%';
+    qualSplit.style.width = '90%';
+    qualSplit.style.background = 'var(--green)';
+  }, 100);
+}
+
+function animateParallelism() {
+  // Reset
+  ['seq-a','seq-b','seq-c','par-a','par-b','par-c'].forEach(id => {
+    const el = document.getElementById(id);
+    el.style.background = 'var(--bg-inset)';
+    el.style.borderColor = 'var(--border)';
+    el.style.color = 'var(--text-dim)';
+  });
+
+  // Sequential: one at a time
+  const seqSteps = [
+    { id: 'seq-a', delay: 200, color: 'var(--accent)' },
+    { id: 'seq-a', delay: 800, color: 'var(--green)', done: true },
+    { id: 'seq-b', delay: 1000, color: 'var(--accent)' },
+    { id: 'seq-b', delay: 1600, color: 'var(--green)', done: true },
+    { id: 'seq-c', delay: 1800, color: 'var(--accent)' },
+    { id: 'seq-c', delay: 2400, color: 'var(--green)', done: true },
+  ];
+
+  seqSteps.forEach(s => {
+    setTimeout(() => {
+      const el = document.getElementById(s.id);
+      el.style.borderColor = s.color;
+      el.style.color = s.color;
+      if (s.done) el.style.background = 'rgba(63,185,80,0.1)';
+      else el.style.background = 'rgba(31,111,235,0.1)';
+    }, s.delay);
+  });
+
+  // Parallel: all at once
+  setTimeout(() => {
+    ['par-a','par-b','par-c'].forEach(id => {
+      const el = document.getElementById(id);
+      el.style.borderColor = 'var(--accent)';
+      el.style.color = 'var(--accent)';
+      el.style.background = 'rgba(31,111,235,0.1)';
+    });
+  }, 200);
+
+  setTimeout(() => {
+    ['par-a','par-b','par-c'].forEach(id => {
+      const el = document.getElementById(id);
+      el.style.borderColor = 'var(--green)';
+      el.style.color = 'var(--green)';
+      el.style.background = 'rgba(63,185,80,0.1)';
+    });
+  }, 800);
+}
+
+// ===== SECTION 5: SIX KNOBS =====
+const knobData = [
+  {
+    name: 'Prompt', icon: '\u270E', short: 'Instructions + context',
+    meaning: 'The instructions and context the agent works with.',
+    pm: 'The brief / ticket / spec you write for an engineer.',
+    good: { name: 'Well-scoped', desc: 'Clear task, relevant context, explicit constraints. The agent knows what to do and what not to do.' },
+    bad: { name: 'Misconfigured', desc: 'Vague instructions, missing context, or contradictory rules. The agent guesses, hallucinates, or ignores important constraints. Like a ticket that says "make it better."' },
+  },
+  {
+    name: 'Tools', icon: '\u2692', short: 'Available capabilities',
+    meaning: 'What the agent can do: read files, search the web, run code, call APIs.',
+    pm: 'What systems the engineer has access to.',
+    good: { name: 'Right tools', desc: 'Agent has exactly the tools it needs. No more, no less. Can complete its task without workarounds.' },
+    bad: { name: 'Misconfigured', desc: 'Missing tools: agent can\'t complete the task. Too many tools: agent wastes time exploring irrelevant capabilities. Like giving an engineer admin access to production when they just need to read logs.' },
+  },
+  {
+    name: 'Termination', icon: '\u23F9', short: 'When to stop',
+    meaning: 'How the agent knows it\'s done. "Tests pass." "All files reviewed." "50 iterations."',
+    pm: 'Definition of done on the ticket.',
+    good: { name: 'Clear exit', desc: 'Explicit success criteria. Agent stops when done, not when tired. Bounded iteration count as a safety net.' },
+    bad: { name: 'Misconfigured', desc: 'No termination condition: agent runs forever (the engineer who never ships). Too aggressive: agent stops before finishing. Ambiguous: agent stops at "good enough" which varies every run.' },
+  },
+  {
+    name: 'Isolation', icon: '\u229E', short: 'Scope boundaries',
+    meaning: 'What the agent can see and touch vs what\'s off-limits.',
+    pm: 'File ownership / code ownership boundaries.',
+    good: { name: 'Clean scope', desc: 'Agent reads and writes only within its domain. Can\'t accidentally modify unrelated code or data.' },
+    bad: { name: 'Misconfigured', desc: 'Too open: agent edits files it shouldn\'t, causing conflicts with other agents. Too closed: agent can\'t access what it needs and fails silently. Like an engineer refactoring code they don\'t own.' },
+  },
+  {
+    name: 'Verification', icon: '\u2713', short: 'Quality check',
+    meaning: 'How the agent\'s work gets checked. Automated tests, a reviewer agent, or nothing.',
+    pm: 'Code review / QA process.',
+    good: { name: 'Verified', desc: 'Independent check catches errors before they propagate. Tests run, types checked, output validated.' },
+    bad: { name: 'Misconfigured', desc: 'No verification: errors propagate to downstream agents (game of telephone). Self-verification only: agent validates its own mistakes. Like shipping without code review.' },
+  },
+  {
+    name: 'Substrate', icon: '\u2261', short: 'Read/write medium',
+    meaning: 'Where the agent reads input and writes output. Filesystem, git repo, database, API.',
+    pm: 'The repo / shared drive / project board.',
+    good: { name: 'Clear handoff', desc: 'Output lands where the next agent expects it. Format is predictable. State is inspectable.' },
+    bad: { name: 'Misconfigured', desc: 'Agent writes to wrong location, wrong format, or ephemeral storage that disappears. Next agent can\'t find the output. Like an engineer writing docs in a personal folder instead of the team wiki.' },
+  },
+];
+
+function renderKnobs() {
+  const grid = document.getElementById('knobsGrid');
+  grid.innerHTML = '';
+  knobData.forEach((k, i) => {
+    const tile = document.createElement('div');
+    tile.className = 'knob-tile';
+    tile.dataset.idx = i;
+    tile.innerHTML = `
+      <div class="knob-icon">${k.icon}</div>
+      <div class="knob-name">${k.name}</div>
+      <div class="knob-short">${k.short}</div>
+    `;
+    tile.onclick = () => selectKnob(i);
+    grid.appendChild(tile);
+  });
+}
+
+function selectKnob(idx) {
+  const tiles = document.querySelectorAll('.knob-tile');
+  tiles.forEach(t => t.classList.toggle('selected', parseInt(t.dataset.idx) === idx));
+
+  const k = knobData[idx];
+  const detail = document.getElementById('knobDetail');
+  detail.className = 'knob-detail visible';
+  detail.innerHTML = `
+    <h3>${k.icon} ${k.name}</h3>
+    <div class="row"><span class="label">Meaning</span><span>${k.meaning}</span></div>
+    <div class="row"><span class="label">PM equiv</span><span>${k.pm}</span></div>
+    <div class="knob-states">
+      <div class="knob-state active" onclick="this.parentElement.querySelectorAll('.knob-state').forEach(s=>s.className='knob-state');this.className='knob-state active'">
+        <div class="state-name" style="color:var(--green)">Configured well</div>
+        <div class="state-desc">${k.good.desc}</div>
+      </div>
+      <div class="knob-state" onclick="this.parentElement.querySelectorAll('.knob-state').forEach(s=>s.className='knob-state');this.className='knob-state bad'">
+        <div class="state-name" style="color:var(--red)">Misconfigured</div>
+        <div class="state-desc">${k.bad.desc}</div>
+      </div>
+    </div>
+  `;
+}
+
+renderKnobs();
+
+// ===== SECTION 6: FOUR PATTERNS =====
+const patternTabs = document.querySelectorAll('.pattern-tab');
+patternTabs.forEach(tab => {
+  tab.onclick = () => {
+    patternTabs.forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    document.querySelectorAll('.pattern-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('pat-' + tab.dataset.pat).classList.add('active');
+  };
+});
+
+function buildPatternNodes() {
+  // Pipeline
+  const pipe = document.getElementById('pipeDag');
+  pipe.innerHTML = `
+    <svg style="position:absolute;width:100%;height:100%;z-index:1">
+      <line x1="28%" y1="50%" x2="42%" y2="50%" stroke="var(--border)" stroke-width="2" class="pat-edge" data-pat="pipeline" data-idx="0"/>
+      <line x1="58%" y1="50%" x2="72%" y2="50%" stroke="var(--border)" stroke-width="2" class="pat-edge" data-pat="pipeline" data-idx="1"/>
+    </svg>
+    <div class="pattern-node" data-pat="pipeline" data-idx="0" style="left:10%;top:50%;transform:translateY(-50%)">Research</div>
+    <div class="pattern-node" data-pat="pipeline" data-idx="1" style="left:40%;top:50%;transform:translateY(-50%)">Implement</div>
+    <div class="pattern-node" data-pat="pipeline" data-idx="2" style="left:72%;top:50%;transform:translateY(-50%)">Test</div>
+  `;
+
+  // Fan-out
+  const fan = document.getElementById('fanDag');
+  fan.innerHTML = `
+    <svg style="position:absolute;width:100%;height:100%;z-index:1">
+      <line x1="15%" y1="35%" x2="28%" y2="18%" stroke="var(--border)" stroke-width="2" class="pat-edge" data-pat="fanout" data-idx="0"/>
+      <line x1="15%" y1="50%" x2="28%" y2="40%" stroke="var(--border)" stroke-width="2" class="pat-edge" data-pat="fanout" data-idx="1"/>
+      <line x1="15%" y1="65%" x2="28%" y2="62%" stroke="var(--border)" stroke-width="2" class="pat-edge" data-pat="fanout" data-idx="2"/>
+      <line x1="15%" y1="80%" x2="28%" y2="84%" stroke="var(--border)" stroke-width="2" class="pat-edge" data-pat="fanout" data-idx="3"/>
+      <line x1="50%" y1="18%" x2="72%" y2="50%" stroke="var(--border)" stroke-width="2" class="pat-edge" data-pat="fanout" data-idx="4"/>
+      <line x1="50%" y1="40%" x2="72%" y2="50%" stroke="var(--border)" stroke-width="2" class="pat-edge" data-pat="fanout" data-idx="5"/>
+      <line x1="50%" y1="62%" x2="72%" y2="50%" stroke="var(--border)" stroke-width="2" class="pat-edge" data-pat="fanout" data-idx="6"/>
+      <line x1="50%" y1="84%" x2="72%" y2="50%" stroke="var(--border)" stroke-width="2" class="pat-edge" data-pat="fanout" data-idx="7"/>
+    </svg>
+    <div class="pattern-node" data-pat="fanout" data-idx="0" style="left:3%;top:50%;transform:translateY(-50%)">Split</div>
+    <div class="pattern-node" data-pat="fanout" data-idx="1" style="left:30%;top:10%">W1</div>
+    <div class="pattern-node" data-pat="fanout" data-idx="2" style="left:30%;top:32%">W2</div>
+    <div class="pattern-node" data-pat="fanout" data-idx="3" style="left:30%;top:54%">W3</div>
+    <div class="pattern-node" data-pat="fanout" data-idx="4" style="left:30%;top:76%">W4</div>
+    <div class="pattern-node" data-pat="fanout" data-idx="5" style="left:72%;top:50%;transform:translateY(-50%)">Merge</div>
+  `;
+
+  // Phased
+  const phase = document.getElementById('phaseDag');
+  phase.innerHTML = `
+    <svg style="position:absolute;width:100%;height:100%;z-index:1">
+    </svg>
+    <div class="pattern-node" data-pat="phased" data-idx="0" style="left:2%;top:42%">Plan</div>
+    <div class="pattern-node" data-pat="phased" data-idx="1" style="left:18%;top:12%">C1</div>
+    <div class="pattern-node" data-pat="phased" data-idx="2" style="left:18%;top:42%">C2</div>
+    <div class="pattern-node" data-pat="phased" data-idx="3" style="left:18%;top:72%">C3</div>
+    <div class="pattern-node" data-pat="phased" data-idx="4" style="left:36%;top:42%">Sync</div>
+    <div class="pattern-node" data-pat="phased" data-idx="5" style="left:52%;top:20%">D1</div>
+    <div class="pattern-node" data-pat="phased" data-idx="6" style="left:52%;top:60%">D2</div>
+    <div class="pattern-node" data-pat="phased" data-idx="7" style="left:70%;top:42%">Sync</div>
+    <div class="pattern-node" data-pat="phased" data-idx="8" style="left:86%;top:42%">Edit</div>
+    <div style="position:absolute;bottom:8px;left:10px;font-family:var(--mono);font-size:10px;color:var(--text-dim);z-index:3">Wave 1 &rarr; Wave 2 &rarr; Wave 3</div>
+  `;
+
+  // Verifier
+  const ver = document.getElementById('verDag');
+  ver.innerHTML = `
+    <svg style="position:absolute;width:100%;height:100%;z-index:1">
+      <line x1="25%" y1="50%" x2="43%" y2="50%" stroke="var(--border)" stroke-width="2"/>
+      <line x1="60%" y1="50%" x2="74%" y2="50%" stroke="var(--border)" stroke-width="2"/>
+      <path d="M 60% 38% Q 40% 15% 22% 38%" stroke="var(--red)" stroke-width="2" fill="none" stroke-dasharray="4"/>
+    </svg>
+    <div class="pattern-node" data-pat="verifier" data-idx="0" style="left:8%;top:50%;transform:translateY(-50%)">Write</div>
+    <div class="pattern-node" data-pat="verifier" data-idx="1" style="left:42%;top:50%;transform:translateY(-50%)">Verify</div>
+    <div class="pattern-node" data-pat="verifier" data-idx="2" style="left:74%;top:50%;transform:translateY(-50%)">Next</div>
+    <div style="position:absolute;top:12px;left:35%;font-family:var(--mono);font-size:10px;color:var(--red);z-index:3">fail &rarr; retry</div>
+    <div style="position:absolute;bottom:12px;left:50%;font-family:var(--mono);font-size:10px;color:var(--green);z-index:3">pass &rarr; continue</div>
+  `;
+}
+buildPatternNodes();
+
+function animatePattern(pat) {
+  const nodes = document.querySelectorAll(`.pattern-node[data-pat="${pat}"]`);
+  nodes.forEach(n => n.className = 'pattern-node');
+
+  if (pat === 'pipeline') {
+    const steps = [
+      { idx: 0, state: 'running', delay: 0 },
+      { idx: 0, state: 'done', delay: 600 },
+      { idx: 1, state: 'running', delay: 800 },
+      { idx: 1, state: 'done', delay: 1400 },
+      { idx: 2, state: 'running', delay: 1600 },
+      { idx: 2, state: 'done', delay: 2200 },
+    ];
+    steps.forEach(s => {
+      setTimeout(() => {
+        const n = document.querySelector(`.pattern-node[data-pat="pipeline"][data-idx="${s.idx}"]`);
+        if (n) n.className = 'pattern-node ' + s.state;
+      }, s.delay);
+    });
+  }
+
+  if (pat === 'fanout') {
+    const steps = [
+      { idx: 0, state: 'running', delay: 0 },
+      { idx: 0, state: 'done', delay: 500 },
+      { idx: [1,2,3,4], state: 'running parallel-highlight', delay: 600 },
+      { idx: [1,2,3,4], state: 'done', delay: 1400 },
+      { idx: 5, state: 'running', delay: 1600 },
+      { idx: 5, state: 'done', delay: 2200 },
+    ];
+    steps.forEach(s => {
+      setTimeout(() => {
+        const indices = Array.isArray(s.idx) ? s.idx : [s.idx];
+        indices.forEach(i => {
+          const n = document.querySelector(`.pattern-node[data-pat="fanout"][data-idx="${i}"]`);
+          if (n) n.className = 'pattern-node ' + s.state;
+        });
+      }, s.delay);
+    });
+  }
+
+  if (pat === 'phased') {
+    const steps = [
+      { idx: 0, state: 'running', delay: 0 },
+      { idx: 0, state: 'done', delay: 400 },
+      { idx: [1,2,3], state: 'running parallel-highlight', delay: 500 },
+      { idx: [1,2,3], state: 'done', delay: 1200 },
+      { idx: 4, state: 'running', delay: 1300 },
+      { idx: 4, state: 'done', delay: 1600 },
+      { idx: [5,6], state: 'running parallel-highlight', delay: 1700 },
+      { idx: [5,6], state: 'done', delay: 2400 },
+      { idx: 7, state: 'running', delay: 2500 },
+      { idx: 7, state: 'done', delay: 2800 },
+      { idx: 8, state: 'running', delay: 2900 },
+      { idx: 8, state: 'done', delay: 3400 },
+    ];
+    steps.forEach(s => {
+      setTimeout(() => {
+        const indices = Array.isArray(s.idx) ? s.idx : [s.idx];
+        indices.forEach(i => {
+          const n = document.querySelector(`.pattern-node[data-pat="phased"][data-idx="${i}"]`);
+          if (n) n.className = 'pattern-node ' + s.state;
+        });
+      }, s.delay);
+    });
+  }
+
+  if (pat === 'verifier') {
+    const steps = [
+      { idx: 0, state: 'running', delay: 0 },
+      { idx: 0, state: 'done', delay: 600 },
+      { idx: 1, state: 'running', delay: 800 },
+      // fail
+      { idx: 1, state: '', delay: 1400, custom: el => { el.style.borderColor='var(--red)'; el.style.color='var(--red)'; el.style.background='rgba(248,81,73,0.12)'; } },
+      { idx: 0, state: 'running', delay: 1800 },
+      { idx: 0, state: 'done', delay: 2400 },
+      { idx: 1, state: 'running', delay: 2600 },
+      { idx: 1, state: 'done', delay: 3200 },
+      { idx: 2, state: 'running', delay: 3400 },
+      { idx: 2, state: 'done', delay: 4000 },
+    ];
+    steps.forEach(s => {
+      setTimeout(() => {
+        const n = document.querySelector(`.pattern-node[data-pat="verifier"][data-idx="${s.idx}"]`);
+        if (!n) return;
+        if (s.custom) { s.custom(n); return; }
+        n.className = 'pattern-node ' + s.state;
+        n.style.borderColor = '';
+        n.style.color = '';
+        n.style.background = '';
+      }, s.delay);
+    });
+  }
+}
+
+// ===== SECTION 7: INSTRUCTION STACK =====
+function animateInstStack() {
+  const layers = document.querySelectorAll('.inst-layer');
+  layers.forEach(l => l.classList.remove('lit'));
+
+  layers.forEach((layer, i) => {
+    setTimeout(() => {
+      layer.classList.add('lit');
+    }, i * 180);
+  });
+}
+
+// Scope hover
+document.querySelectorAll('.scope-layer').forEach(layer => {
+  layer.addEventListener('mouseenter', () => layer.classList.add('active'));
+  layer.addEventListener('mouseleave', () => layer.classList.remove('active'));
+});
+
+// ===== SECTION 8: QUIZ =====
+const quizData = [
+  {
+    title: 'Scenario 1: PR Review Pipeline',
+    text: `You ask Claude Code to review a pull request. It spawns three subagents:
+- Architecture reviewer (reads the diff + project CLAUDE.md)
+- Silent failure hunter (reads the diff + searches for catch blocks)
+- Type safety checker (reads the diff + runs the type checker)
+
+All three write their findings to a shared review document. You read it and decide whether to approve.`,
+    questions: [
+      { label: 'Nodes (agents)', options: ['You + Claude Code + 3 reviewers = 5', 'The 3 reviewers (Claude Code is the orchestrator, you are the human)', 'Claude Code + 3 reviewers = 4'], answer: 1 },
+      { label: 'Edges (data flow)', options: ['Diff flows to all 3; findings flow to review doc; doc flows to you', 'Each reviewer talks to the others', 'Linear: arch -> silent -> type -> you'], answer: 0 },
+      { label: 'Substrate', options: ['Chat messages', 'Filesystem (review document)', 'API calls'], answer: 1 },
+      { label: 'Sync points', options: ['After all 3 write to the review doc', 'After each reviewer finishes', 'No sync needed'], answer: 0 },
+      { label: 'What verifies what', options: ['Each reviewer verifies the code; you verify the reviewers', 'The type checker verifies everything', 'No verification occurs'], answer: 0 },
+      { label: 'Split reason', options: ['Context protection (each reviewer needs different context)', 'Parallelism only', 'Both context protection AND parallelism'], answer: 2 },
+    ],
+  },
+  {
+    title: 'Scenario 2: Feature Build with Spec',
+    text: `You describe a feature in chat. Claude Code:
+1. Writes a spec (spec.md) based on your description
+2. You approve the spec
+3. Claude spawns two subagents: one for backend (reads spec + backend repo), one for frontend (reads spec + frontend repo)
+4. Both write code to their respective repos
+5. A test agent runs integration tests against both
+6. If tests fail, the failing agent gets the error and retries
+7. If tests pass, Claude summarizes what was built`,
+    questions: [
+      { label: 'Nodes (agents)', options: ['Backend + frontend + tester (Claude is the orchestrator, you are the human)', 'You + Claude + backend + frontend + tester = 5', 'Claude + 2 subagents = 3'], answer: 0 },
+      { label: 'Edges (data flow)', options: ['Your description -> spec -> both agents -> test results -> summary', 'Everything flows through Claude only', 'Agents communicate directly'], answer: 0 },
+      { label: 'Substrate', options: ['Chat window only', 'Filesystem: spec.md, backend repo, frontend repo, test output', 'Database'], answer: 1 },
+      { label: 'Sync points', options: ['Only at the end', 'After spec approval, after both agents finish, after tests', 'After each agent finishes individually'], answer: 1 },
+      { label: 'What verifies what', options: ['Integration tests verify both agents; you verified the spec', 'Nothing is verified', 'Each agent self-verifies'], answer: 0 },
+      { label: 'Split reason', options: ['Parallelism only', 'Context protection only', 'Both: backend needs server context, frontend needs UI context, and they run in parallel'], answer: 2 },
+    ],
+  },
+  {
+    title: 'Scenario 3: Workforce Self-Optimization',
+    text: `You run /workforce-review. The orchestrating agent:
+1. Reads the agent registry (all agents across multiple scopes)
+2. For each scope, spawns an audit agent that:
+   a. Reads all agent definitions in that scope
+   b. Checks each agent's prompt, tools, and references against the current codebase
+   c. Writes a findings report per scope
+3. A synthesis agent reads all 4 scope reports
+4. It produces a ranked list of recommended changes
+5. You approve some changes
+6. Targeted update agents apply approved changes, each scoped to one file
+7. A drift-check agent verifies no broken references remain
+
+Between waves, the orchestrator compresses state (drops raw audit data, keeps only findings).`,
+    questions: [
+      { label: 'Nodes (agents)', options: ['Orchestrator + 4 audit + synthesis + N update + drift-check', 'Just the orchestrator', 'Orchestrator + synthesis + drift-check = 3'], answer: 0 },
+      { label: 'Edges (data flow)', options: ['Registry -> audit reports -> synthesis -> ranked changes -> updates -> drift check', 'Everything in one chat', 'Linear pipeline only'], answer: 0 },
+      { label: 'Substrate', options: ['Chat messages', 'Filesystem: agent registry, scope reports, change list, agent definition files', 'External database'], answer: 1 },
+      { label: 'Sync points', options: ['After all 4 audits complete, after your approval, after all updates complete', 'Only at the end', 'After each audit individually'], answer: 0 },
+      { label: 'What verifies what', options: ['Drift-check verifies the update agents; you verify the synthesis recommendations', 'No verification', 'The orchestrator verifies everything'], answer: 0 },
+      { label: 'Split reason', options: ['Parallelism only (audits run in parallel)', 'Context protection only', 'Both: audits need different scope context AND run in parallel; updates are independent AND scoped to single files'], answer: 2 },
+    ],
+  },
+];
+
+let quizState = { scenario: 0, answers: {}, totalCorrect: 0 };
+
+function renderQuiz() {
+  const container = document.getElementById('quizContainer');
+  container.innerHTML = '';
+
+  const sc = quizData[quizState.scenario];
+  if (!sc) {
+    // Show final score
+    document.getElementById('quizScore').classList.add('visible');
+    document.getElementById('scoreNum').textContent = quizState.totalCorrect + '/18';
+    document.getElementById('quizProgress').textContent = 'Complete';
+    return;
+  }
+
+  document.getElementById('quizProgress').textContent = 'Scenario ' + (quizState.scenario + 1) + ' of 3';
+
+  const div = document.createElement('div');
+  div.className = 'quiz-scenario';
+  div.innerHTML = `<h3>${sc.title}</h3><div class="scenario-text">${sc.text}</div>`;
+
+  sc.questions.forEach((q, qi) => {
+    const qDiv = document.createElement('div');
+    qDiv.className = 'quiz-question';
+    qDiv.innerHTML = `<div class="q-label">${q.label}</div><div class="quiz-options" data-qi="${qi}"></div>`;
+    const opts = qDiv.querySelector('.quiz-options');
+    q.options.forEach((opt, oi) => {
+      const btn = document.createElement('div');
+      btn.className = 'quiz-opt';
+      btn.textContent = opt;
+      btn.dataset.oi = oi;
+      btn.onclick = () => selectQuizOpt(qi, oi);
+      opts.appendChild(btn);
+    });
+    div.appendChild(qDiv);
+  });
+
+  const resultDiv = document.createElement('div');
+  resultDiv.className = 'quiz-result';
+  resultDiv.id = 'quizResult-' + quizState.scenario;
+  div.appendChild(resultDiv);
+
+  const checkBtn = document.createElement('button');
+  checkBtn.className = 'btn';
+  checkBtn.textContent = 'Check Answers';
+  checkBtn.style.marginTop = '16px';
+  checkBtn.onclick = () => checkQuiz();
+  div.appendChild(checkBtn);
+
+  container.appendChild(div);
+  quizState.answers = {};
+}
+
+function selectQuizOpt(qi, oi) {
+  quizState.answers[qi] = oi;
+  const opts = document.querySelectorAll(`.quiz-options[data-qi="${qi}"] .quiz-opt`);
+  opts.forEach(o => o.classList.toggle('selected', parseInt(o.dataset.oi) === oi));
+}
+
+function checkQuiz() {
+  const sc = quizData[quizState.scenario];
+  let correct = 0;
+  sc.questions.forEach((q, qi) => {
+    const opts = document.querySelectorAll(`.quiz-options[data-qi="${qi}"] .quiz-opt`);
+    opts.forEach(o => {
+      const oi = parseInt(o.dataset.oi);
+      o.onclick = null; // Disable
+      if (oi === q.answer) o.classList.add('correct');
+      if (quizState.answers[qi] === oi && oi !== q.answer) o.classList.add('wrong');
+    });
+    if (quizState.answers[qi] === q.answer) correct++;
+  });
+
+  quizState.totalCorrect += correct;
+
+  const result = document.getElementById('quizResult-' + quizState.scenario);
+  result.className = 'quiz-result visible ' + (correct >= 4 ? 'pass' : 'fail');
+  result.innerHTML = `<strong>${correct}/6 correct.</strong> ${correct >= 5 ? 'Strong.' : correct >= 3 ? 'Decent -- review the ones you missed.' : 'Review this section before moving on.'}`;
+
+  if (quizState.scenario < quizData.length - 1) {
+    const nextBtn = document.createElement('button');
+    nextBtn.className = 'btn';
+    nextBtn.textContent = 'Next Scenario';
+    nextBtn.style.marginTop = '12px';
+    nextBtn.onclick = () => { quizState.scenario++; renderQuiz(); };
+    result.appendChild(document.createElement('br'));
+    result.appendChild(nextBtn);
+  } else {
+    const finishBtn = document.createElement('button');
+    finishBtn.className = 'btn';
+    finishBtn.textContent = 'See Final Score';
+    finishBtn.style.marginTop = '12px';
+    finishBtn.onclick = () => { quizState.scenario++; renderQuiz(); };
+    result.appendChild(document.createElement('br'));
+    result.appendChild(finishBtn);
+  }
+}
+
+renderQuiz();
+</script>
+
+</body>
+</html>
