@@ -34,7 +34,7 @@ The skeptics raise fair points: AI handles 80% of a build fluently, but the last
 
 ## Who this is for
 
-- Product managers who've been scoping features for years but never shipped code
+- Product managers who understand the problem better than anyone but can't build the solution themselves
 - Designers who know exactly what something should look like but rely on engineers to build it
 - Anyone who thinks they're "not technical"
 
@@ -59,6 +59,7 @@ Real lessons from a PM learning to build, starting from zero:
 | [Model Architecture](lessons/03-model-architecture.md) | What a neural network actually is, in terms you already know |
 | [Training Loop](lessons/04-training-loop.md) | How AI learns, and why it matters for your product decisions |
 | [Managing Agent Teams](lessons/05-managing-agent-teams.md) | Multi-agent systems explained for PMs who manage engineers |
+| [AI System Design](lessons/06-ai-system-design.md) | The eight decisions you'll actually make when adding AI to a product. Based on a framework from [Aman Agarwal](https://www.linkedin.com/in/amanagarwal1/). |
 
 *Each lesson also has a [styled HTML version](lessons/html/) with diagrams -- download and open in your browser.*
 
