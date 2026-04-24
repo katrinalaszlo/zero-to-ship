@@ -63,10 +63,6 @@ Real lessons from a PM learning to build, starting from zero:
 
 *Each lesson also has a [styled HTML version](lessons/html/) with diagrams -- download and open in your browser.*
 
-### The Blog
-
-- [I Build Billing for AI Companies. So I Decided to Learn How AI Training Works.](blog/blog.md) -- The full story of going from PM to builder.
-
 ## The idea
 
 Product people already know how to:
@@ -95,7 +91,7 @@ No gatekeeping. No prerequisites. If you built something and learned something, 
 If you're brand new:
 
 1. Install [Claude Code](https://docs.anthropic.com/en/docs/claude-code) (or any AI coding tool you prefer)
-2. Read the [Learning Map](lessons/learning-map.html) to see the full picture
+2. Read the [Learning Map](lessons/01-learning-map.md) to see the full picture
 3. Start with whatever lesson matches where you are right now
 4. Build something. Anything. A landing page, a tool, an API. Ship it.
 
